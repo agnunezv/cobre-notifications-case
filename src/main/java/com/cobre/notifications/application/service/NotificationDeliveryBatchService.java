@@ -8,6 +8,7 @@ import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliver
 import com.cobre.notifications.application.port.inbound.DeliverPreparedNotificationUseCase;
 import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliveryUseCase;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
+import com.cobre.notifications.application.port.inbound.RecoverExpiredNotificationLeasesUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,14 +23,17 @@ public class NotificationDeliveryBatchService implements ProcessNotificationDeli
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationDeliveryBatchService.class);
 
+    private final RecoverExpiredNotificationLeasesUseCase recoverExpiredLeases;
     private final ClaimNotificationDeliveriesUseCase claimDeliveries;
     private final PrepareNotificationDeliveryUseCase prepareDelivery;
     private final DeliverPreparedNotificationUseCase deliverPreparedNotification;
 
     public NotificationDeliveryBatchService(
+            RecoverExpiredNotificationLeasesUseCase recoverExpiredLeases,
             ClaimNotificationDeliveriesUseCase claimDeliveries,
             PrepareNotificationDeliveryUseCase prepareDelivery,
             DeliverPreparedNotificationUseCase deliverPreparedNotification) {
+        this.recoverExpiredLeases = recoverExpiredLeases;
         this.claimDeliveries = claimDeliveries;
         this.prepareDelivery = prepareDelivery;
         this.deliverPreparedNotification = deliverPreparedNotification;
@@ -37,6 +41,7 @@ public class NotificationDeliveryBatchService implements ProcessNotificationDeli
 
     @Override
     public NotificationDeliveryBatchResult process(ClaimNotificationDeliveriesCommand command) {
+        int recoveredLeaseCount = recoverExpiredLeases.recoverExpired(command.batchSize());
         List<ClaimedNotificationDelivery> claimedDeliveries = claimDeliveries.claimDue(command);
         int preparationSkippedCount = 0;
         int completionAppliedCount = 0;
@@ -64,6 +69,7 @@ public class NotificationDeliveryBatchService implements ProcessNotificationDeli
         }
 
         return new NotificationDeliveryBatchResult(
+                recoveredLeaseCount,
                 claimedDeliveries.size(),
                 preparationSkippedCount,
                 completionAppliedCount,

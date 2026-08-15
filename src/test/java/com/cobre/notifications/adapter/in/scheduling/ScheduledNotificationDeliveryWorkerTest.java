@@ -28,7 +28,7 @@ class ScheduledNotificationDeliveryWorkerTest {
         AtomicReference<ClaimNotificationDeliveriesCommand> received = new AtomicReference<>();
         ProcessNotificationDeliveryBatchUseCase processBatch = command -> {
             received.set(command);
-            return new NotificationDeliveryBatchResult(2, 0, 2, 0, 0);
+            return new NotificationDeliveryBatchResult(0, 2, 0, 2, 0, 0);
         };
         ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
                 processBatch,

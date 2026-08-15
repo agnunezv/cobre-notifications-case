@@ -14,7 +14,7 @@ class NotificationDeliveryWorkerConfigurationTest {
             .withUserConfiguration(NotificationDeliveryWorkerConfiguration.class)
             .withBean(
                     ProcessNotificationDeliveryBatchUseCase.class,
-                    () -> command -> new NotificationDeliveryBatchResult(0, 0, 0, 0, 0));
+                    () -> command -> new NotificationDeliveryBatchResult(0, 0, 0, 0, 0, 0));
 
     @Test
     void keepsScheduledDeliveryDisabledUnlessExplicitlyEnabled() {

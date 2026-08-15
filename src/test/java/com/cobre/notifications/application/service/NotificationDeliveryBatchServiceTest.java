@@ -7,12 +7,14 @@ import com.cobre.notifications.application.model.PreparedNotificationDelivery;
 import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliveriesUseCase;
 import com.cobre.notifications.application.port.inbound.DeliverPreparedNotificationUseCase;
 import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliveryUseCase;
+import com.cobre.notifications.application.port.inbound.RecoverExpiredNotificationLeasesUseCase;
 import com.cobre.notifications.domain.model.NotificationDestination;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,13 +30,17 @@ class NotificationDeliveryBatchServiceTest {
 
     @Test
     void isolatesPerDeliveryFailuresAndReportsEveryBatchOutcome() {
+        List<String> orchestrationOrder = new ArrayList<>();
         List<ClaimedNotificationDelivery> claimed = List.of(
                 claimed("FINALIZED"),
                 claimed("SKIPPED"),
                 claimed("STALE"),
                 claimed("PREPARATION_FAILURE"),
                 claimed("DELIVERY_FAILURE"));
-        ClaimNotificationDeliveriesUseCase claimUseCase = command -> claimed;
+        ClaimNotificationDeliveriesUseCase claimUseCase = command -> {
+            orchestrationOrder.add("claim");
+            return claimed;
+        };
         PrepareNotificationDeliveryUseCase prepareUseCase = delivery -> switch (delivery.eventId()) {
             case "SKIPPED" -> Optional.empty();
             case "PREPARATION_FAILURE" -> throw new IllegalStateException("Preparation failed");
@@ -45,14 +51,20 @@ class NotificationDeliveryBatchServiceTest {
             case "DELIVERY_FAILURE" -> throw new IllegalStateException("Delivery failed");
             default -> true;
         };
+        RecoverExpiredNotificationLeasesUseCase recoverUseCase = batchSize -> {
+            orchestrationOrder.add("recover");
+            return 2;
+        };
         NotificationDeliveryBatchService service = new NotificationDeliveryBatchService(
+                recoverUseCase,
                 claimUseCase,
                 prepareUseCase,
                 deliverUseCase);
 
         NotificationDeliveryBatchResult result = service.process(COMMAND);
 
-        assertThat(result).isEqualTo(new NotificationDeliveryBatchResult(5, 1, 1, 1, 2));
+        assertThat(result).isEqualTo(new NotificationDeliveryBatchResult(2, 5, 1, 1, 1, 2));
+        assertThat(orchestrationOrder).containsExactly("recover", "claim");
     }
 
     @Test
@@ -61,6 +73,7 @@ class NotificationDeliveryBatchServiceTest {
             throw new IllegalStateException("Claim failed");
         };
         NotificationDeliveryBatchService service = new NotificationDeliveryBatchService(
+                batchSize -> 0,
                 claimUseCase,
                 delivery -> Optional.empty(),
                 delivery -> false);
@@ -79,6 +92,7 @@ class NotificationDeliveryBatchServiceTest {
                 1,
                 "worker-1",
                 NOW.plusSeconds(30),
+                false,
                 new NotificationDestination(
                         "SUB001",
                         URI.create("https://hooks.example.com/notifications")));

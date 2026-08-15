@@ -16,12 +16,13 @@ V1 provides:
 - Tenant-safe subscription resolution by client and event type.
 - At-least-once webhook delivery over HTTPS with configurable retries.
 - Durable event state, delivery cycles, and individual attempt outcomes.
+- Automatic recovery of expired worker leases.
 - An authenticated API to list, inspect, and replay notification events.
 - Database-backed worker coordination across application instances.
 - Health endpoints and operational logs.
 
 V1 does not provide subscription-management APIs, a message broker, webhook
-signing, lease recovery, metrics and alerts, or multi-region delivery.
+signing, metrics and alerts, or multi-region delivery.
 
 ## System context
 
@@ -129,7 +130,10 @@ The worker claims due rows in bounded batches using PostgreSQL row locks and
 `SKIP LOCKED`. It resolves a client-owned subscription, snapshots the selected
 destination, records an attempt, performs the HTTPS request outside the
 database transaction, and atomically stores the attempt outcome and next event
-state.
+state. Before each claim, it also recovers a bounded set of expired leases. A
+claim abandoned before opening an HTTP attempt is immediately rescheduled; an
+open attempt is closed as retryable and follows the configured retry policy.
+Late results cannot overwrite a recovered delivery.
 
 ## Security and tenant isolation
 
@@ -159,7 +163,6 @@ a separate identity or private network for operational endpoints.
 
 - Actuator health checks and application logs exist; delivery
   metrics, dashboards, and alerts are the next planned increment.
-- Expired worker leases are stored but not yet recovered automatically.
 - A repeated replay after the first accepted transition returns `409`; V1 does
   not implement an `Idempotency-Key` contract.
 - The attached JSON file is a case-specific ingress adapter, not the target

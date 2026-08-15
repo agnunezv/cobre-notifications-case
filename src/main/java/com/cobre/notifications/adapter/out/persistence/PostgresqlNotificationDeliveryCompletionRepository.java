@@ -29,6 +29,7 @@ public class PostgresqlNotificationDeliveryCompletionRepository
               AND attempt.attempt_number = :attemptNumber
               AND attempt.finished_at IS NULL
               AND notification.delivery_status = 'PROCESSING'
+              AND notification.lease_until > :finishedAt
             FOR UPDATE OF notification, attempt
             """;
 
@@ -50,6 +51,7 @@ public class PostgresqlNotificationDeliveryCompletionRepository
                 next_attempt_at = :nextAttemptAt,
                 lease_owner = NULL,
                 lease_until = NULL,
+                lease_recovery_pending = FALSE,
                 delivered_at = :deliveredAt,
                 version = notification.version + 1,
                 updated_at = :finishedAt

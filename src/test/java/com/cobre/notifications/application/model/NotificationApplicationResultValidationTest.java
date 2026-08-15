@@ -45,6 +45,7 @@ class NotificationApplicationResultValidationTest {
                 0,
                 "worker-1",
                 null,
+                false,
                 null);
 
         assertThat(validator.validate(delivery))
@@ -132,6 +133,7 @@ class NotificationApplicationResultValidationTest {
     @Test
     void requiresEveryClaimedDeliveryToHaveOneBatchOutcome() {
         NotificationDeliveryBatchResult result = new NotificationDeliveryBatchResult(
+                0,
                 5,
                 1,
                 1,
@@ -141,6 +143,42 @@ class NotificationApplicationResultValidationTest {
         assertThat(validator.validate(result))
                 .extracting(ConstraintViolation::getMessage)
                 .containsExactly("every claimed delivery must have exactly one batch outcome");
+    }
+
+    @Test
+    void requiresAllOpenAttemptFieldsForAnExpiredLease() {
+        ExpiredNotificationLease expiredLease = new ExpiredNotificationLease(
+                "EVT001",
+                1,
+                "worker-1",
+                NOW.minusSeconds(1),
+                UUID.randomUUID(),
+                null,
+                null);
+
+        assertThat(validator.validate(expiredLease))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("open attempt fields must either all be present or all be absent");
+    }
+
+    @Test
+    void validatesTheStateProducedByLeaseRecovery() {
+        NotificationLeaseRecovery recovery = new NotificationLeaseRecovery(
+                new ExpiredNotificationLease(
+                        "EVT001",
+                        1,
+                        "worker-1",
+                        NOW.minusSeconds(1),
+                        null,
+                        null,
+                        null),
+                DeliveryStatus.RETRY_SCHEDULED,
+                null,
+                NOW);
+
+        assertThat(validator.validate(recovery))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("nextAttemptAt must be present only for a retry scheduled at or after recovery");
     }
 
     private NotificationDeliveryAttemptCompletion completion(

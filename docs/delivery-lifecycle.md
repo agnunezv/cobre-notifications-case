@@ -141,9 +141,21 @@ The accepted request:
 The worker later creates the first attempt of the new cycle with origin
 `MANUAL_REPLAY`. A second request sees `PENDING` and receives `409 Conflict`.
 
-## Known limitation
+## Lease recovery
 
-An expired `PROCESSING` lease is not yet returned automatically to a claimable
-state. Lease recovery should preserve the same cycle and classify the next
-attempt as `LEASE_RECOVERY`; it belongs in a separate increment because it
-changes failure-recovery behavior rather than the normal delivery path.
+Before claiming due work, each batch locks a bounded set of expired
+`PROCESSING` leases with `SKIP LOCKED`. Concurrent workers therefore recover
+different events without waiting for or duplicating each other's work.
+
+If the expired claim never opened an HTTP attempt, the event becomes
+immediately claimable without consuming an attempt. If an unfinished attempt
+exists, its outcome is unknown: recovery closes it as a retryable
+`WORKER_LEASE_EXPIRED` failure and applies the configured backoff or moves the
+event to `FAILED` when the attempt limit is exhausted. The next attempt keeps
+the current delivery cycle and records `LEASE_RECOVERY` as its origin.
+
+A result received after lease expiry cannot complete the event. This preserves
+lease ownership, but it also means that a client might have accepted the
+request before the worker failed to persist the response. Retrying that event
+is another reason the platform provides at-least-once rather than exactly-once
+delivery.

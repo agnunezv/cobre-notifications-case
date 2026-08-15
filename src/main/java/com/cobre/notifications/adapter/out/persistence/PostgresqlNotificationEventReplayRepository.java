@@ -32,6 +32,7 @@ public class PostgresqlNotificationEventReplayRepository implements Notification
                 next_attempt_at = :replayedAt,
                 lease_owner = NULL,
                 lease_until = NULL,
+                lease_recovery_pending = FALSE,
                 delivered_at = NULL,
                 version = version + 1,
                 updated_at = :replayedAt

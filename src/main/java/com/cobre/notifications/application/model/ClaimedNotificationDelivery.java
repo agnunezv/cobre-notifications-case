@@ -17,5 +17,6 @@ public record ClaimedNotificationDelivery(
         @Positive int deliveryCycle,
         @NotBlank @Size(max = 128) String workerId,
         @NotNull Instant leaseUntil,
+        boolean leaseRecovery,
         @Valid NotificationDestination destination) {
 }

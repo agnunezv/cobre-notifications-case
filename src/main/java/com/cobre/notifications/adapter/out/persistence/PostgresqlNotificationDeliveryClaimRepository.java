@@ -43,6 +43,7 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                       notification.delivery_cycle,
                       notification.lease_owner,
                       notification.lease_until,
+                      notification.lease_recovery_pending,
                       notification.subscription_id,
                       notification.destination_url_snapshot
             """;
@@ -56,6 +57,7 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                     resultSet.getInt("delivery_cycle"),
                     resultSet.getString("lease_owner"),
                     resultSet.getTimestamp("lease_until").toInstant(),
+                    resultSet.getBoolean("lease_recovery_pending"),
                     destination(
                             resultSet.getString("subscription_id"),
                             resultSet.getString("destination_url_snapshot")));

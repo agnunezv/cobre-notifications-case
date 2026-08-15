@@ -46,6 +46,7 @@ public class PostgresqlNotificationDeliveryPreparationRepository
             UPDATE notification_events AS notification
             SET subscription_id = :subscriptionId,
                 destination_url_snapshot = :destinationUrl,
+                lease_recovery_pending = FALSE,
                 version = notification.version + 1,
                 updated_at = :operationAt
             WHERE notification.event_id = :eventId
@@ -61,6 +62,7 @@ public class PostgresqlNotificationDeliveryPreparationRepository
                 next_attempt_at = NULL,
                 lease_owner = NULL,
                 lease_until = NULL,
+                lease_recovery_pending = FALSE,
                 delivered_at = NULL,
                 version = notification.version + 1,
                 updated_at = :operationAt
@@ -220,7 +222,7 @@ public class PostgresqlNotificationDeliveryPreparationRepository
                 .addValue("eventId", claimedDelivery.eventId())
                 .addValue("deliveryCycle", claimedDelivery.deliveryCycle())
                 .addValue("attemptNumber", attemptNumber)
-                .addValue("origin", origin(claimedDelivery.deliveryCycle(), attemptNumber).name())
+                .addValue("origin", origin(claimedDelivery, attemptNumber).name())
                 .addValue("startedAt", Timestamp.from(startedAt))
                 .addValue(
                         "finishedAt",
@@ -253,11 +255,16 @@ public class PostgresqlNotificationDeliveryPreparationRepository
                 .addValue("operationAt", Timestamp.from(preparedAt));
     }
 
-    private DeliveryAttemptOrigin origin(int deliveryCycle, int attemptNumber) {
+    private DeliveryAttemptOrigin origin(
+            ClaimedNotificationDelivery claimedDelivery,
+            int attemptNumber) {
+        if (claimedDelivery.leaseRecovery()) {
+            return DeliveryAttemptOrigin.LEASE_RECOVERY;
+        }
         if (attemptNumber > 1) {
             return DeliveryAttemptOrigin.AUTOMATIC_RETRY;
         }
-        return deliveryCycle == 1
+        return claimedDelivery.deliveryCycle() == 1
                 ? DeliveryAttemptOrigin.INITIAL
                 : DeliveryAttemptOrigin.MANUAL_REPLAY;
     }

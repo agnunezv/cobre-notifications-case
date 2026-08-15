@@ -27,11 +27,13 @@ public class ScheduledNotificationDeliveryWorker {
     public void processNextBatch() {
         try {
             NotificationDeliveryBatchResult result = processBatch.process(properties.claimCommand());
-            if (result.claimedCount() > 0) {
+            if (result.recoveredLeaseCount() > 0 || result.claimedCount() > 0) {
                 LOGGER.info(
-                        "Notification delivery batch processed by {}: claimed={}, preparationSkipped={}, "
-                                + "completionApplied={}, staleCompletions={}, processingFailures={}",
+                        "Notification delivery batch processed by {}: leasesRecovered={}, claimed={}, "
+                                + "preparationSkipped={}, completionApplied={}, staleCompletions={}, "
+                                + "processingFailures={}",
                         properties.workerId(),
+                        result.recoveredLeaseCount(),
                         result.claimedCount(),
                         result.preparationSkippedCount(),
                         result.completionAppliedCount(),

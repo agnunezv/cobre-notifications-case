@@ -295,7 +295,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
                         2,
                         Duration.ofSeconds(30)));
 
-        assertThat(result).isEqualTo(new NotificationDeliveryBatchResult(2, 0, 2, 0, 0));
+        assertThat(result).isEqualTo(new NotificationDeliveryBatchResult(0, 2, 0, 2, 0, 0));
         assertThat(persistedEvent("BATCH_001").status()).isEqualTo("COMPLETED");
         assertThat(persistedEvent("BATCH_002").status()).isEqualTo("COMPLETED");
         assertThat(onlyAttempt("BATCH_001").result()).isEqualTo("SUCCESS");

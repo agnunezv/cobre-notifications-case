@@ -4,6 +4,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.PositiveOrZero;
 
 public record NotificationDeliveryBatchResult(
+        @PositiveOrZero int recoveredLeaseCount,
         @PositiveOrZero int claimedCount,
         @PositiveOrZero int preparationSkippedCount,
         @PositiveOrZero int completionAppliedCount,
