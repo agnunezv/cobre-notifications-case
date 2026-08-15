@@ -31,12 +31,13 @@ stateDiagram-v2
 2. Only a successfully claimed event moves to `PROCESSING`.
 3. A `2xx` response completes the current cycle. A timeout is treated as
    ambiguous and follows the retry path.
-4. A retryable failure moves to `RETRY_SCHEDULED`; a terminal failure or an
-   exhausted retry policy moves to `FAILED`.
+4. A retryable failure moves to `RETRY_SCHEDULED` while the configured maximum
+   number of attempts has not been reached. A permanent failure or an exhausted
+   retry policy moves to `FAILED`.
 5. Replay is accepted only for `FAILED` events. It starts a new delivery cycle
    with new attempts while preserving the same event identifier.
 
 ## Deferred details
 
-Retry delays, maximum attempts, lease recovery, and terminal HTTP
+Retry delays, configuration binding, lease recovery, and HTTP result
 classifications will be defined with the delivery worker increment.
