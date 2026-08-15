@@ -19,10 +19,10 @@ V1 provides:
 - Automatic recovery of expired worker leases.
 - An authenticated API to list, inspect, and replay notification events.
 - Database-backed worker coordination across application instances.
-- Health endpoints and operational logs.
+- Health endpoints, operational logs, and Prometheus delivery metrics.
 
 V1 does not provide subscription-management APIs, a message broker, webhook
-signing, metrics and alerts, or multi-region delivery.
+signing, dashboards and alerts, or multi-region delivery.
 
 ## System context
 
@@ -145,7 +145,9 @@ its SQL predicate, preventing cross-client reads or mutations.
 Static bearer tokens are appropriate for a local technical case, not for a
 public production API. Production should use short-lived credentials from an
 identity provider, managed secret storage, rotation, authorization scopes, and
-a separate identity or private network for operational endpoints.
+a separate identity or private network for operational endpoints. The local
+Prometheus endpoint remains protected by the current bearer authentication;
+client identities must not authorize monitoring access in production.
 
 ## Key decisions
 
@@ -161,8 +163,9 @@ a separate identity or private network for operational endpoints.
 
 ## Current operational gaps
 
-- Actuator health checks and application logs exist; delivery
-  metrics, dashboards, and alerts are the next planned increment.
+- Actuator exports health, JVM, HTTP, backlog, webhook, worker, and lease
+  recovery metrics. A local Prometheus/Grafana stack, dashboards, and alerts
+  remain to be added.
 - A repeated replay after the first accepted transition returns `409`; V1 does
   not implement an `Idempotency-Key` contract.
 - The attached JSON file is a case-specific ingress adapter, not the target

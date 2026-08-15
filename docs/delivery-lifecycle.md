@@ -159,3 +159,26 @@ lease ownership, but it also means that a client might have accepted the
 request before the worker failed to persist the response. Retrying that event
 is another reason the platform provides at-least-once rather than exactly-once
 delivery.
+
+## Delivery metrics
+
+Actuator exposes Prometheus counters and timers for webhook results, failure
+categories, attempt latency, batch duration, claims, completions, processing
+failures, and recovered leases. PostgreSQL-backed gauges report the number of
+events currently due and the age of the oldest due event. Metric labels use
+only bounded platform enums and categories; client identifiers, event
+identifiers, worker identifiers, payloads, and destination URLs are excluded.
+
+Backlog gauges describe shared database state, so every application replica
+reports the same value. Dashboards should aggregate these gauges with `max`
+rather than `sum`. Each scrape executes two small indexed PostgreSQL queries;
+this can move to a cached or dedicated exporter if measured scrape load becomes
+material.
+
+Micrometer instruments the application process, while Prometheus and Grafana
+must run outside it. Prometheus scrapes and stores the metrics, and Grafana
+queries Prometheus for dashboards. This separation preserves historical data
+and lets the monitoring platform detect application unavailability through the
+Prometheus `up` metric. A future local Docker Compose setup may share one host
+for demonstration purposes; production monitoring requires an independent
+failure domain and, where justified, high availability.

@@ -2,6 +2,7 @@ package com.cobre.notifications.config;
 
 import com.cobre.notifications.adapter.in.scheduling.ScheduledNotificationDeliveryWorker;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
+import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +21,8 @@ public class NotificationDeliveryWorkerConfiguration {
             havingValue = "true")
     ScheduledNotificationDeliveryWorker scheduledNotificationDeliveryWorker(
             ProcessNotificationDeliveryBatchUseCase processBatch,
-            NotificationDeliveryWorkerProperties properties) {
-        return new ScheduledNotificationDeliveryWorker(processBatch, properties);
+            NotificationDeliveryWorkerProperties properties,
+            NotificationDeliveryMetrics metrics) {
+        return new ScheduledNotificationDeliveryWorker(processBatch, properties, metrics);
     }
 }

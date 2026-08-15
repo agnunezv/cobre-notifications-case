@@ -2,7 +2,9 @@ package com.cobre.notifications.adapter.in.scheduling;
 
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
+import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
+import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import com.cobre.notifications.config.NotificationDeliveryWorkerProperties;
 import org.junit.jupiter.api.Test;
 
@@ -30,13 +32,17 @@ class ScheduledNotificationDeliveryWorkerTest {
             received.set(command);
             return new NotificationDeliveryBatchResult(0, 2, 0, 2, 0, 0);
         };
+        RecordingMetrics metrics = new RecordingMetrics();
         ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
                 processBatch,
-                PROPERTIES);
+                PROPERTIES,
+                metrics);
 
         worker.processNextBatch();
 
         assertThat(received.get()).isEqualTo(PROPERTIES.claimCommand());
+        assertThat(metrics.batchResult).isEqualTo(new NotificationDeliveryBatchResult(0, 2, 0, 2, 0, 0));
+        assertThat(metrics.batchDuration).isNotNull().isGreaterThanOrEqualTo(Duration.ZERO);
     }
 
     @Test
@@ -44,10 +50,53 @@ class ScheduledNotificationDeliveryWorkerTest {
         ProcessNotificationDeliveryBatchUseCase processBatch = command -> {
             throw new IllegalStateException("PostgreSQL is unavailable");
         };
+        RecordingMetrics metrics = new RecordingMetrics();
         ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
                 processBatch,
-                PROPERTIES);
+                PROPERTIES,
+                metrics);
 
         assertThatCode(worker::processNextBatch).doesNotThrowAnyException();
+        assertThat(metrics.batchFailureDuration).isNotNull().isGreaterThanOrEqualTo(Duration.ZERO);
+    }
+
+    @Test
+    void keepsTheSchedulerAliveWhenBatchMetricsCannotBeRecorded() {
+        ProcessNotificationDeliveryBatchUseCase processBatch = command ->
+                new NotificationDeliveryBatchResult(0, 0, 0, 0, 0, 0);
+        NotificationDeliveryMetrics failingMetrics = new RecordingMetrics() {
+            @Override
+            public void recordBatch(NotificationDeliveryBatchResult result, Duration duration) {
+                throw new IllegalStateException("Metrics unavailable");
+            }
+        };
+        ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
+                processBatch,
+                PROPERTIES,
+                failingMetrics);
+
+        assertThatCode(worker::processNextBatch).doesNotThrowAnyException();
+    }
+
+    private static class RecordingMetrics implements NotificationDeliveryMetrics {
+
+        private NotificationDeliveryBatchResult batchResult;
+        private Duration batchDuration;
+        private Duration batchFailureDuration;
+
+        @Override
+        public void recordAttempt(WebhookDeliveryOutcome outcome) {
+        }
+
+        @Override
+        public void recordBatch(NotificationDeliveryBatchResult result, Duration duration) {
+            batchResult = result;
+            batchDuration = duration;
+        }
+
+        @Override
+        public void recordBatchFailure(Duration duration) {
+            batchFailureDuration = duration;
+        }
     }
 }

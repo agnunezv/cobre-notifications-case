@@ -1,14 +1,17 @@
 package com.cobre.notifications.application.service;
 
+import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
 import com.cobre.notifications.application.model.PreparedNotificationDelivery;
 import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.CompleteNotificationDeliveryAttemptUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryGateway;
+import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.NotificationDestination;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,6 +31,7 @@ class NotificationDeliveryExecutionServiceTest {
                 12);
         AtomicReference<PreparedNotificationDelivery> delivered = new AtomicReference<>();
         AtomicReference<WebhookDeliveryOutcome> completedWith = new AtomicReference<>();
+        AtomicReference<WebhookDeliveryOutcome> measured = new AtomicReference<>();
         NotificationDeliveryGateway gateway = preparedDelivery -> {
             delivered.set(preparedDelivery);
             return outcome;
@@ -39,13 +43,47 @@ class NotificationDeliveryExecutionServiceTest {
         };
         NotificationDeliveryExecutionService service = new NotificationDeliveryExecutionService(
                 gateway,
-                completeAttempt);
+                completeAttempt,
+                metrics(measured));
 
         boolean completionApplied = service.deliver(delivery);
 
         assertThat(completionApplied).isTrue();
         assertThat(delivered.get()).isSameAs(delivery);
         assertThat(completedWith.get()).isSameAs(outcome);
+        assertThat(measured.get()).isSameAs(outcome);
+    }
+
+    @Test
+    void doesNotInterruptCompletionWhenAttemptMetricsFail() {
+        PreparedNotificationDelivery delivery = delivery();
+        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(
+                DeliveryAttemptResult.SUCCESS,
+                200,
+                null,
+                null,
+                10);
+        NotificationDeliveryMetrics failingMetrics = new NoOpMetrics() {
+            @Override
+            public void recordAttempt(WebhookDeliveryOutcome ignored) {
+                throw new IllegalStateException("Metrics unavailable");
+            }
+        };
+        NotificationDeliveryExecutionService service = new NotificationDeliveryExecutionService(
+                ignored -> outcome,
+                (ignoredDelivery, ignoredOutcome) -> true,
+                failingMetrics);
+
+        assertThat(service.deliver(delivery)).isTrue();
+    }
+
+    private NotificationDeliveryMetrics metrics(AtomicReference<WebhookDeliveryOutcome> measured) {
+        return new NoOpMetrics() {
+            @Override
+            public void recordAttempt(WebhookDeliveryOutcome outcome) {
+                measured.set(outcome);
+            }
+        };
     }
 
     private PreparedNotificationDelivery delivery() {
@@ -63,5 +101,20 @@ class NotificationDeliveryExecutionServiceTest {
                 1,
                 attemptId.toString(),
                 Instant.parse("2026-08-15T11:59:59Z"));
+    }
+
+    private static class NoOpMetrics implements NotificationDeliveryMetrics {
+
+        @Override
+        public void recordAttempt(WebhookDeliveryOutcome outcome) {
+        }
+
+        @Override
+        public void recordBatch(NotificationDeliveryBatchResult result, Duration duration) {
+        }
+
+        @Override
+        public void recordBatchFailure(Duration duration) {
+        }
     }
 }

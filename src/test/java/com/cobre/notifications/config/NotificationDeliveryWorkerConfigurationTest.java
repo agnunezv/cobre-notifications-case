@@ -2,9 +2,13 @@ package com.cobre.notifications.config;
 
 import com.cobre.notifications.adapter.in.scheduling.ScheduledNotificationDeliveryWorker;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
+import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
+import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,7 +18,8 @@ class NotificationDeliveryWorkerConfigurationTest {
             .withUserConfiguration(NotificationDeliveryWorkerConfiguration.class)
             .withBean(
                     ProcessNotificationDeliveryBatchUseCase.class,
-                    () -> command -> new NotificationDeliveryBatchResult(0, 0, 0, 0, 0, 0));
+                    () -> command -> new NotificationDeliveryBatchResult(0, 0, 0, 0, 0, 0))
+            .withBean(NotificationDeliveryMetrics.class, NoOpMetrics::new);
 
     @Test
     void keepsScheduledDeliveryDisabledUnlessExplicitlyEnabled() {
@@ -52,5 +57,20 @@ class NotificationDeliveryWorkerConfigurationTest {
                 "notifications.delivery.worker.initial-delay=1h",
                 "notifications.delivery.worker.lease-duration=2m"
         };
+    }
+
+    private static final class NoOpMetrics implements NotificationDeliveryMetrics {
+
+        @Override
+        public void recordAttempt(WebhookDeliveryOutcome outcome) {
+        }
+
+        @Override
+        public void recordBatch(NotificationDeliveryBatchResult result, Duration duration) {
+        }
+
+        @Override
+        public void recordBatchFailure(Duration duration) {
+        }
     }
 }
