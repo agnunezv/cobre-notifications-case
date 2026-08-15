@@ -23,6 +23,14 @@ notifications:
   json-import:
     enabled: ${NOTIFICATION_JSON_IMPORT_ENABLED:false}
     location: classpath:imports/notification_events.json
+  security:
+    clients:
+      - client-id: CLIENT001
+        token: ${NOTIFICATION_CLIENT_001_TOKEN:}
+      - client-id: CLIENT002
+        token: ${NOTIFICATION_CLIENT_002_TOKEN:}
+      - client-id: CLIENT003
+        token: ${NOTIFICATION_CLIENT_003_TOKEN:}
 
 management:
   endpoints:
