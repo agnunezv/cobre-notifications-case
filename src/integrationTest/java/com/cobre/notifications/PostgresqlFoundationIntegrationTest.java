@@ -4,27 +4,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-class PostgresqlFoundationIntegrationTest {
-
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17.10-alpine");
-
-    @DynamicPropertySource
-    static void databaseProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class PostgresqlFoundationIntegrationTest extends PostgresqlIntegrationTestSupport {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -37,8 +23,15 @@ class PostgresqlFoundationIntegrationTest {
         String eventsTable = jdbcTemplate.queryForObject(
                 "SELECT to_regclass('public.notification_events')::text",
                 String.class);
+        List<String> eventIndexes = jdbcTemplate.queryForList(
+                "SELECT indexname FROM pg_indexes WHERE tablename = 'notification_events'",
+                String.class);
 
-        assertThat(migrationCount).isEqualTo(1);
+        assertThat(migrationCount).isEqualTo(2);
         assertThat(eventsTable).isEqualTo("notification_events");
+        assertThat(eventIndexes).contains(
+                "idx_notification_events_client_created",
+                "idx_notification_events_client_status_created",
+                "idx_notification_events_subscription");
     }
 }
