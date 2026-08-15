@@ -1,0 +1,31 @@
+package com.cobre.notifications.config;
+
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.web.client.RestClientBuilderConfigurer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+
+import java.net.http.HttpClient;
+
+@Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(NotificationDeliveryHttpProperties.class)
+public class NotificationDeliveryHttpConfiguration {
+
+    @Bean
+    RestClient notificationDeliveryRestClient(
+            RestClientBuilderConfigurer builderConfigurer,
+            NotificationDeliveryHttpProperties properties) {
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(properties.connectTimeout())
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(properties.responseTimeout());
+
+        return builderConfigurer.configure(RestClient.builder())
+                .requestFactory(requestFactory)
+                .build();
+    }
+}

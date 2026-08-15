@@ -17,6 +17,10 @@ spring:
       enabled: true
 
 notifications:
+  delivery:
+    http:
+      connect-timeout: ${NOTIFICATION_HTTP_CONNECT_TIMEOUT:2s}
+      response-timeout: ${NOTIFICATION_HTTP_RESPONSE_TIMEOUT:5s}
   json-import:
     enabled: ${NOTIFICATION_JSON_IMPORT_ENABLED:false}
     location: classpath:imports/notification_events.json
