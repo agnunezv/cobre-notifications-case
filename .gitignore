@@ -1,0 +1,14 @@
+.gradle/
+build/
+out/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+
+# Local infrastructure data and generated reports
+.docker/
