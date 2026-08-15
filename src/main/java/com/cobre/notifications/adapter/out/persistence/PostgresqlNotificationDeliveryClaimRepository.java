@@ -2,6 +2,8 @@ package com.cobre.notifications.adapter.out.persistence;
 
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryClaimRepository;
+import com.cobre.notifications.domain.model.InvalidNotificationDestinationException;
+import com.cobre.notifications.domain.model.NotificationDestination;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -39,7 +41,10 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                       notification.event_type,
                       notification.content,
                       notification.delivery_cycle,
-                      notification.lease_until
+                      notification.lease_owner,
+                      notification.lease_until,
+                      notification.subscription_id,
+                      notification.destination_url_snapshot
             """;
 
     private static final RowMapper<ClaimedNotificationDelivery> ROW_MAPPER = (resultSet, rowNumber) ->
@@ -49,7 +54,11 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                     resultSet.getString("event_type"),
                     resultSet.getString("content"),
                     resultSet.getInt("delivery_cycle"),
-                    resultSet.getTimestamp("lease_until").toInstant());
+                    resultSet.getString("lease_owner"),
+                    resultSet.getTimestamp("lease_until").toInstant(),
+                    destination(
+                            resultSet.getString("subscription_id"),
+                            resultSet.getString("destination_url_snapshot")));
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -70,5 +79,16 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                 .addValue("batchSize", batchSize);
 
         return jdbcTemplate.query(CLAIM_DUE_SQL, parameters, ROW_MAPPER);
+    }
+
+    private static NotificationDestination destination(String subscriptionId, String endpointUrl) {
+        if (subscriptionId == null && endpointUrl == null) {
+            return null;
+        }
+        if (subscriptionId == null || endpointUrl == null) {
+            throw new InvalidNotificationDestinationException(
+                    "The stored notification destination is incomplete");
+        }
+        return NotificationDestination.fromStoredValues(subscriptionId, endpointUrl);
     }
 }

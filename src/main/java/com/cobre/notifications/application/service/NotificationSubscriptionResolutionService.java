@@ -4,7 +4,9 @@ import com.cobre.notifications.application.model.AmbiguousNotificationSubscripti
 import com.cobre.notifications.application.model.NotificationSubscriptionQuery;
 import com.cobre.notifications.application.port.inbound.ResolveNotificationSubscriptionUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationSubscriptionRepository;
+import com.cobre.notifications.domain.model.InvalidNotificationSubscriptionException;
 import com.cobre.notifications.domain.model.NotificationSubscription;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -23,7 +25,13 @@ public class NotificationSubscriptionResolutionService implements ResolveNotific
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(
+            readOnly = true,
+            noRollbackFor = {
+                    AmbiguousNotificationSubscriptionException.class,
+                    ConstraintViolationException.class,
+                    InvalidNotificationSubscriptionException.class
+            })
     public Optional<NotificationSubscription> resolve(NotificationSubscriptionQuery query) {
         List<NotificationSubscription> matches = repository.findActiveMatches(query);
 

@@ -39,6 +39,8 @@ class NotificationApplicationResultValidationTest {
                 "credit_payment",
                 "Payment confirmed",
                 0,
+                "worker-1",
+                null,
                 null);
 
         assertThat(validator.validate(delivery))

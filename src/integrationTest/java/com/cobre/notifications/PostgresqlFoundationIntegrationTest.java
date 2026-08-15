@@ -26,13 +26,17 @@ class PostgresqlFoundationIntegrationTest extends PostgresqlIntegrationTestSuppo
         List<String> eventIndexes = jdbcTemplate.queryForList(
                 "SELECT indexname FROM pg_indexes WHERE tablename = 'notification_events'",
                 String.class);
+        List<String> attemptIndexes = jdbcTemplate.queryForList(
+                "SELECT indexname FROM pg_indexes WHERE tablename = 'delivery_attempts'",
+                String.class);
 
-        assertThat(migrationCount).isEqualTo(3);
+        assertThat(migrationCount).isEqualTo(4);
         assertThat(eventsTable).isEqualTo("notification_events");
         assertThat(eventIndexes).contains(
                 "idx_notification_events_client_created",
                 "idx_notification_events_client_status_created",
                 "idx_notification_events_subscription",
                 "idx_notification_events_claimable");
+        assertThat(attemptIndexes).contains("uq_delivery_attempts_open_per_cycle");
     }
 }
