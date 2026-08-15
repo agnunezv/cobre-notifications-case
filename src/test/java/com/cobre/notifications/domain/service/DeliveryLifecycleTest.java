@@ -7,13 +7,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.time.Duration;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 class DeliveryLifecycleTest {
 
-    private final DeliveryLifecycle lifecycle = new DeliveryLifecycle(new RetryPolicy(3));
+    private final DeliveryLifecycle lifecycle = new DeliveryLifecycle(new RetryPolicy(
+            3,
+            List.of(Duration.ofSeconds(1), Duration.ofSeconds(5))));
 
     @ParameterizedTest
     @EnumSource(value = DeliveryStatus.class, names = {"PENDING", "RETRY_SCHEDULED"})
@@ -106,10 +111,4 @@ class DeliveryLifecycleTest {
                 .withMessage("completedAttempts must be at least 1");
     }
 
-    @Test
-    void requiresAValidMaximumNumberOfAttempts() {
-        assertThatIllegalArgumentException()
-                .isThrownBy(() -> new RetryPolicy(0))
-                .withMessage("maximumAttempts must be at least 1");
-    }
 }

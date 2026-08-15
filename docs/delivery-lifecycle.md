@@ -37,7 +37,13 @@ stateDiagram-v2
 5. Replay is accepted only for `FAILED` events. It starts a new delivery cycle
    with new attempts while preserving the same event identifier.
 
+## Retry policy
+
+V1 applies one global, configurable policy. `maximum-attempts` includes the
+initial attempt, and `delays` provides one duration for every automatic retry.
+The default is four total attempts with delays of 1, 5, and 30 seconds.
+
 ## Deferred details
 
-Retry delays, configuration binding, lease recovery, and HTTP result
-classifications will be defined with the delivery worker increment.
+Lease recovery and worker orchestration will be defined in their corresponding
+delivery worker increments.

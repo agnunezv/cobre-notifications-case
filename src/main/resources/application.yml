@@ -21,6 +21,9 @@ notifications:
     http:
       connect-timeout: ${NOTIFICATION_HTTP_CONNECT_TIMEOUT:2s}
       response-timeout: ${NOTIFICATION_HTTP_RESPONSE_TIMEOUT:5s}
+    retry:
+      maximum-attempts: ${NOTIFICATION_RETRY_MAX_ATTEMPTS:4}
+      delays: ${NOTIFICATION_RETRY_DELAYS:1s,5s,30s}
   json-import:
     enabled: ${NOTIFICATION_JSON_IMPORT_ENABLED:false}
     location: classpath:imports/notification_events.json
