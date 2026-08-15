@@ -1,6 +1,7 @@
 package com.cobre.notifications.adapter.in.web.notification;
 
 import com.cobre.notifications.application.model.NotificationEventNotFoundException;
+import com.cobre.notifications.application.model.NotificationEventReplayNotAllowedException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
@@ -20,6 +21,15 @@ public class NotificationEventApiExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 exception.getMessage());
         problem.setTitle("Notification event not found");
+        return problem;
+    }
+
+    @ExceptionHandler(NotificationEventReplayNotAllowedException.class)
+    ProblemDetail handleReplayNotAllowed(NotificationEventReplayNotAllowedException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage());
+        problem.setTitle("Notification event cannot be replayed");
         return problem;
     }
 

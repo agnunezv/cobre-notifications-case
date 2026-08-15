@@ -3,15 +3,20 @@ package com.cobre.notifications.adapter.in.web.notification;
 import com.cobre.notifications.adapter.in.web.security.ClientPrincipal;
 import com.cobre.notifications.application.model.NotificationEventDetailsQuery;
 import com.cobre.notifications.application.model.NotificationEventQuery;
+import com.cobre.notifications.application.model.ReplayNotificationEventCommand;
 import com.cobre.notifications.application.port.inbound.GetNotificationEventDetailsUseCase;
 import com.cobre.notifications.application.port.inbound.ListNotificationEventsUseCase;
+import com.cobre.notifications.application.port.inbound.ReplayNotificationEventUseCase;
 import com.cobre.notifications.domain.model.DeliveryStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
@@ -22,12 +27,15 @@ public class NotificationEventController {
 
     private final ListNotificationEventsUseCase listNotificationEvents;
     private final GetNotificationEventDetailsUseCase getNotificationEventDetails;
+    private final ReplayNotificationEventUseCase replayNotificationEvent;
 
     public NotificationEventController(
             ListNotificationEventsUseCase listNotificationEvents,
-            GetNotificationEventDetailsUseCase getNotificationEventDetails) {
+            GetNotificationEventDetailsUseCase getNotificationEventDetails,
+            ReplayNotificationEventUseCase replayNotificationEvent) {
         this.listNotificationEvents = listNotificationEvents;
         this.getNotificationEventDetails = getNotificationEventDetails;
+        this.replayNotificationEvent = replayNotificationEvent;
     }
 
     @GetMapping
@@ -56,5 +64,15 @@ public class NotificationEventController {
                 client.clientId(),
                 notificationEventId);
         return NotificationEventDetailsResponse.from(getNotificationEventDetails.get(query));
+    }
+
+    @PostMapping("/{notification_event_id}/replay")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void replay(
+            @AuthenticationPrincipal ClientPrincipal client,
+            @PathVariable("notification_event_id") String notificationEventId) {
+        replayNotificationEvent.replay(new ReplayNotificationEventCommand(
+                client.clientId(),
+                notificationEventId));
     }
 }

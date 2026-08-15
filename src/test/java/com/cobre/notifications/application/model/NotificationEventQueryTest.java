@@ -89,4 +89,26 @@ class NotificationEventQueryTest {
                         "An authenticated client is required",
                         "notificationEventId must not exceed 64 characters");
     }
+
+    @Test
+    void acceptsAValidReplayCommand() {
+        ReplayNotificationEventCommand command = new ReplayNotificationEventCommand(
+                "CLIENT001",
+                "EVENT001");
+
+        assertThat(validator.validate(command)).isEmpty();
+    }
+
+    @Test
+    void rejectsInvalidReplayCommandIdentifiers() {
+        ReplayNotificationEventCommand command = new ReplayNotificationEventCommand(
+                " ",
+                "E".repeat(65));
+
+        assertThat(validator.validate(command))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactlyInAnyOrder(
+                        "An authenticated client is required",
+                        "notificationEventId must not exceed 64 characters");
+    }
 }
