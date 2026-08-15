@@ -1,12 +1,15 @@
 package com.cobre.notifications.adapter.in.web.notification;
 
 import com.cobre.notifications.adapter.in.web.security.ClientPrincipal;
+import com.cobre.notifications.application.model.NotificationEventDetailsQuery;
 import com.cobre.notifications.application.model.NotificationEventQuery;
+import com.cobre.notifications.application.port.inbound.GetNotificationEventDetailsUseCase;
 import com.cobre.notifications.application.port.inbound.ListNotificationEventsUseCase;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,9 +21,13 @@ import java.time.Instant;
 public class NotificationEventController {
 
     private final ListNotificationEventsUseCase listNotificationEvents;
+    private final GetNotificationEventDetailsUseCase getNotificationEventDetails;
 
-    public NotificationEventController(ListNotificationEventsUseCase listNotificationEvents) {
+    public NotificationEventController(
+            ListNotificationEventsUseCase listNotificationEvents,
+            GetNotificationEventDetailsUseCase getNotificationEventDetails) {
         this.listNotificationEvents = listNotificationEvents;
+        this.getNotificationEventDetails = getNotificationEventDetails;
     }
 
     @GetMapping
@@ -39,5 +46,15 @@ public class NotificationEventController {
                 page,
                 size);
         return NotificationEventListResponse.from(listNotificationEvents.list(query));
+    }
+
+    @GetMapping("/{notification_event_id}")
+    public NotificationEventDetailsResponse get(
+            @AuthenticationPrincipal ClientPrincipal client,
+            @PathVariable("notification_event_id") String notificationEventId) {
+        NotificationEventDetailsQuery query = new NotificationEventDetailsQuery(
+                client.clientId(),
+                notificationEventId);
+        return NotificationEventDetailsResponse.from(getNotificationEventDetails.get(query));
     }
 }

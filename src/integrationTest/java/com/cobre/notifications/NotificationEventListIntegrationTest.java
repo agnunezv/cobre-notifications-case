@@ -67,6 +67,47 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
     }
 
     @Test
+    void returnsTheAuthenticatedClientsEventDetails() throws Exception {
+        mockMvc.perform(get("/notification_events/LIST001")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-integration-token"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.event_id").value("LIST001"))
+                .andExpect(jsonPath("$.event_type").value("credit_payment"))
+                .andExpect(jsonPath("$.content").value("Test event LIST001"))
+                .andExpect(jsonPath("$.created_at").value("2026-08-14T10:00:00Z"))
+                .andExpect(jsonPath("$.delivery_date").value("2026-08-14T10:00:30Z"))
+                .andExpect(jsonPath("$.delivery_status").value("COMPLETED"))
+                .andExpect(jsonPath("$.client_id").doesNotExist())
+                .andExpect(jsonPath("$.subscription_id").doesNotExist())
+                .andExpect(jsonPath("$.destination_url").doesNotExist())
+                .andExpect(jsonPath("$.attempts").doesNotExist());
+    }
+
+    @Test
+    void doesNotRevealWhetherAnEventBelongsToAnotherClient() throws Exception {
+        assertNotFoundForClient("LIST004");
+        assertNotFoundForClient("DOES_NOT_EXIST");
+    }
+
+    @Test
+    void requiresAuthenticationToRetrieveEventDetails() throws Exception {
+        mockMvc.perform(get("/notification_events/LIST001"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void rejectsAnOversizedNotificationEventId() throws Exception {
+        mockMvc.perform(get("/notification_events/{notification_event_id}", "E".repeat(65))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-integration-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid request parameters"))
+                .andExpect(jsonPath("$.detail")
+                        .value("notificationEventId must not exceed 64 characters"));
+    }
+
+    @Test
     void filtersAndPaginatesWithAStableOrder() throws Exception {
         mockMvc.perform(get("/notification_events")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-integration-token")
@@ -139,6 +180,15 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
                 .andExpect(jsonPath("$.title").value("Invalid notification data"))
                 .andExpect(jsonPath("$.detail")
                         .value("Stored notification data violates the application contract"));
+    }
+
+    private void assertNotFoundForClient(String eventId) throws Exception {
+        mockMvc.perform(get("/notification_events/{notification_event_id}", eventId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-integration-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Notification event not found"))
+                .andExpect(jsonPath("$.detail").value("Notification event was not found"));
     }
 
     private void insertEvent(

@@ -85,6 +85,21 @@ class NotificationApplicationResultValidationTest {
     }
 
     @Test
+    void validatesNotificationEventDetailsReturnedByPersistence() {
+        NotificationEventDetails details = new NotificationEventDetails(
+                "EVT001",
+                "credit_payment",
+                "Payment confirmed",
+                NOW,
+                null,
+                DeliveryStatus.COMPLETED);
+
+        assertThat(validator.validate(details))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("deliveryDate is required when deliveryStatus is final");
+    }
+
+    @Test
     void validatesTheStatusSelectedForAnAttemptOutcome() {
         NotificationDeliveryAttemptCompletion completion = completion(
                 DeliveryStatus.COMPLETED,

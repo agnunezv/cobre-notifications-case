@@ -67,4 +67,26 @@ class NotificationEventQueryTest {
                         "page must be greater than or equal to zero",
                         "size must be between 1 and 100");
     }
+
+    @Test
+    void acceptsAValidDetailsQuery() {
+        NotificationEventDetailsQuery query = new NotificationEventDetailsQuery(
+                "CLIENT001",
+                "EVENT001");
+
+        assertThat(validator.validate(query)).isEmpty();
+    }
+
+    @Test
+    void rejectsInvalidDetailsQueryIdentifiers() {
+        NotificationEventDetailsQuery query = new NotificationEventDetailsQuery(
+                " ",
+                "E".repeat(65));
+
+        assertThat(validator.validate(query))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactlyInAnyOrder(
+                        "An authenticated client is required",
+                        "notificationEventId must not exceed 64 characters");
+    }
 }

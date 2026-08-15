@@ -1,5 +1,6 @@
 package com.cobre.notifications.adapter.in.web.notification;
 
+import com.cobre.notifications.application.model.NotificationEventNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
@@ -12,6 +13,15 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice(assignableTypes = NotificationEventController.class)
 public class NotificationEventApiExceptionHandler {
+
+    @ExceptionHandler(NotificationEventNotFoundException.class)
+    ProblemDetail handleNotFound(NotificationEventNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage());
+        problem.setTitle("Notification event not found");
+        return problem;
+    }
 
     @ExceptionHandler(ConstraintViolationException.class)
     ProblemDetail handleInvalidQuery(ConstraintViolationException exception) {

@@ -1,5 +1,7 @@
 package com.cobre.notifications.adapter.out.persistence;
 
+import com.cobre.notifications.application.model.NotificationEventDetails;
+import com.cobre.notifications.application.model.NotificationEventDetailsQuery;
 import com.cobre.notifications.application.model.NotificationEventPage;
 import com.cobre.notifications.application.model.NotificationEventQuery;
 import com.cobre.notifications.application.model.NotificationEventSummary;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class PostgresqlNotificationEventQueryRepository implements NotificationEventQueryRepository {
@@ -22,11 +25,29 @@ public class PostgresqlNotificationEventQueryRepository implements NotificationE
             WHERE client_id = :clientId
             """;
 
+    private static final String FIND_DETAILS_QUERY = """
+            SELECT event_id, event_type, content, created_at, delivery_date, delivery_status
+            FROM notification_events
+            WHERE event_id = :notificationEventId
+              AND client_id = :clientId
+            """;
+
     private static final RowMapper<NotificationEventSummary> ROW_MAPPER = (resultSet, rowNumber) -> {
         Timestamp deliveryDate = resultSet.getTimestamp("delivery_date");
         return new NotificationEventSummary(
                 resultSet.getString("event_id"),
                 resultSet.getString("event_type"),
+                resultSet.getTimestamp("created_at").toInstant(),
+                deliveryDate == null ? null : deliveryDate.toInstant(),
+                DeliveryStatus.valueOf(resultSet.getString("delivery_status")));
+    };
+
+    private static final RowMapper<NotificationEventDetails> DETAILS_ROW_MAPPER = (resultSet, rowNumber) -> {
+        Timestamp deliveryDate = resultSet.getTimestamp("delivery_date");
+        return new NotificationEventDetails(
+                resultSet.getString("event_id"),
+                resultSet.getString("event_type"),
+                resultSet.getString("content"),
                 resultSet.getTimestamp("created_at").toInstant(),
                 deliveryDate == null ? null : deliveryDate.toInstant(),
                 DeliveryStatus.valueOf(resultSet.getString("delivery_status")));
@@ -66,5 +87,16 @@ public class PostgresqlNotificationEventQueryRepository implements NotificationE
         List<NotificationEventSummary> items = hasNext ? rows.subList(0, query.size()) : rows;
 
         return new NotificationEventPage(items, query.page(), query.size(), hasNext);
+    }
+
+    @Override
+    public Optional<NotificationEventDetails> findDetails(NotificationEventDetailsQuery query) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("notificationEventId", query.notificationEventId())
+                .addValue("clientId", query.clientId());
+
+        return jdbcTemplate.query(FIND_DETAILS_QUERY, parameters, DETAILS_ROW_MAPPER)
+                .stream()
+                .findFirst();
     }
 }
