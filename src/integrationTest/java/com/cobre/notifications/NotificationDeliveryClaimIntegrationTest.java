@@ -6,6 +6,7 @@ import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliver
 import com.cobre.notifications.application.port.inbound.ImportNotificationEventsUseCase;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.NotificationEvent;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(NotificationDeliveryClaimIntegrationTest.FixedClockConfiguration.class)
@@ -173,6 +175,27 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void rejectsAnInvalidClaimCommandAtTheApplicationBoundary() {
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
+                " ",
+                0,
+                Duration.ZERO);
+
+        assertThatExceptionOfType(ConstraintViolationException.class)
+                .isThrownBy(() -> claimUseCase.claimDue(command))
+                .withMessageContaining("workerId is required")
+                .withMessageContaining("batchSize must be between 1 and 100")
+                .withMessageContaining("leaseDuration must be positive");
+    }
+
+    @Test
+    void requiresAClaimCommandAtTheApplicationBoundary() {
+        assertThatExceptionOfType(ConstraintViolationException.class)
+                .isThrownBy(() -> claimUseCase.claimDue(null))
+                .withMessageContaining("must not be null");
     }
 
     private ClaimNotificationDeliveriesCommand command(String workerId, int batchSize) {

@@ -1,66 +1,106 @@
 package com.cobre.notifications.application.model;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ClaimNotificationDeliveriesCommandTest {
+
+    private static ValidatorFactory validatorFactory;
+    private static Validator validator;
+
+    @BeforeAll
+    static void configureValidation() {
+        validatorFactory = Validation.buildDefaultValidatorFactory();
+        validator = validatorFactory.getValidator();
+    }
+
+    @AfterAll
+    static void closeValidation() {
+        validatorFactory.close();
+    }
 
     @ParameterizedTest
     @ValueSource(ints = {1, ClaimNotificationDeliveriesCommand.MAX_BATCH_SIZE})
     void acceptsSupportedBatchSizes(int batchSize) {
-        assertThatCode(() -> new ClaimNotificationDeliveriesCommand(
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
                 "worker-1",
                 batchSize,
-                Duration.ofSeconds(30)))
-                .doesNotThrowAnyException();
+                Duration.ofSeconds(30));
+
+        assertThat(validator.validate(command)).isEmpty();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", " "})
     void rejectsBlankWorkerIdentifiers(String workerId) {
-        assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ClaimNotificationDeliveriesCommand(
-                        workerId,
-                        10,
-                        Duration.ofSeconds(30)))
-                .withMessage("workerId is required");
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
+                workerId,
+                10,
+                Duration.ofSeconds(30));
+
+        assertThat(validator.validate(command))
+                .extracting(ConstraintViolation::getMessage)
+                .contains("workerId is required");
     }
 
     @Test
     void rejectsWorkerIdentifiersThatDoNotFitTheDatabaseColumn() {
-        assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ClaimNotificationDeliveriesCommand(
-                        "w".repeat(129),
-                        10,
-                        Duration.ofSeconds(30)))
-                .withMessage("workerId must not exceed 128 characters");
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
+                "w".repeat(129),
+                10,
+                Duration.ofSeconds(30));
+
+        assertThat(validator.validate(command))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("workerId must not exceed 128 characters");
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, 101})
     void rejectsUnsupportedBatchSizes(int batchSize) {
-        assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ClaimNotificationDeliveriesCommand(
-                        "worker-1",
-                        batchSize,
-                        Duration.ofSeconds(30)))
-                .withMessage("batchSize must be between 1 and 100");
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
+                "worker-1",
+                batchSize,
+                Duration.ofSeconds(30));
+
+        assertThat(validator.validate(command))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("batchSize must be between 1 and 100");
     }
 
     @ParameterizedTest
     @ValueSource(longs = {0, -1})
     void rejectsNonPositiveLeaseDurations(long seconds) {
-        assertThatIllegalArgumentException()
-                .isThrownBy(() -> new ClaimNotificationDeliveriesCommand(
-                        "worker-1",
-                        10,
-                        Duration.ofSeconds(seconds)))
-                .withMessage("leaseDuration must be positive");
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
+                "worker-1",
+                10,
+                Duration.ofSeconds(seconds));
+
+        assertThat(validator.validate(command))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("leaseDuration must be positive");
+    }
+
+    @Test
+    void requiresALeaseDuration() {
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
+                "worker-1",
+                10,
+                null);
+
+        assertThat(validator.validate(command))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("leaseDuration is required");
     }
 }

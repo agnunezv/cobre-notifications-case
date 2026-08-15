@@ -6,13 +6,14 @@ import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliver
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryClaimRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 @Service
+@Validated
 public class NotificationDeliveryClaimService implements ClaimNotificationDeliveriesUseCase {
 
     private final NotificationDeliveryClaimRepository repository;
@@ -28,8 +29,6 @@ public class NotificationDeliveryClaimService implements ClaimNotificationDelive
     @Override
     @Transactional
     public List<ClaimedNotificationDelivery> claimDue(ClaimNotificationDeliveriesCommand command) {
-        Objects.requireNonNull(command, "command must not be null");
-
         Instant claimedAt = clock.instant();
         Instant leaseUntil = claimedAt.plus(command.leaseDuration());
         return repository.claimDue(

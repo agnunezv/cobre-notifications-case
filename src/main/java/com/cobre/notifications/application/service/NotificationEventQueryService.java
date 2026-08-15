@@ -6,8 +6,10 @@ import com.cobre.notifications.application.port.inbound.ListNotificationEventsUs
 import com.cobre.notifications.application.port.outbound.NotificationEventQueryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 public class NotificationEventQueryService implements ListNotificationEventsUseCase {
 
     private final NotificationEventQueryRepository repository;

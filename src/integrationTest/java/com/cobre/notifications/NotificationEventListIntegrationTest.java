@@ -128,6 +128,19 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
+    @Test
+    void reportsInvalidStoredDataAsAnInternalError() throws Exception {
+        jdbcTemplate.update("UPDATE notification_events SET delivery_date = NULL WHERE event_id = 'LIST001'");
+
+        mockMvc.perform(get("/notification_events")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-integration-token"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid notification data"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Stored notification data violates the application contract"));
+    }
+
     private void insertEvent(
             String eventId,
             String clientId,

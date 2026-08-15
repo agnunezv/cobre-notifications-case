@@ -1,6 +1,8 @@
 package com.cobre.notifications.adapter.in.web.security;
 
 import com.cobre.notifications.config.NotificationSecurityProperties;
+import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+@Validated
 public class ClientTokenRegistry {
 
     private final List<ConfiguredToken> configuredTokens;
@@ -28,7 +31,7 @@ public class ClientTokenRegistry {
                 .toList();
     }
 
-    public Optional<ClientPrincipal> resolve(String candidateToken) {
+    public Optional<@Valid ClientPrincipal> resolve(String candidateToken) {
         if (candidateToken == null || candidateToken.isBlank()) {
             return Optional.empty();
         }

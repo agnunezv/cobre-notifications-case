@@ -1,31 +1,31 @@
 package com.cobre.notifications.application.model;
 
 import com.cobre.notifications.domain.model.DeliveryStatus;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 
 public record NotificationEventQuery(
+        @NotBlank(message = "An authenticated client is required")
+        @Size(max = 64, message = "clientId must not exceed 64 characters")
         String clientId,
         Instant createdFrom,
         Instant createdTo,
         DeliveryStatus deliveryStatus,
-        int page,
+        @PositiveOrZero(message = "page must be greater than or equal to zero") int page,
+        @Min(value = 1, message = "size must be between 1 and 100")
+        @Max(value = MAX_PAGE_SIZE, message = "size must be between 1 and 100")
         int size) {
 
     public static final int MAX_PAGE_SIZE = 100;
 
-    public NotificationEventQuery {
-        if (clientId == null || clientId.isBlank()) {
-            throw new InvalidNotificationEventQueryException("An authenticated client is required");
-        }
-        if (page < 0) {
-            throw new InvalidNotificationEventQueryException("page must be greater than or equal to zero");
-        }
-        if (size < 1 || size > MAX_PAGE_SIZE) {
-            throw new InvalidNotificationEventQueryException("size must be between 1 and " + MAX_PAGE_SIZE);
-        }
-        if (createdFrom != null && createdTo != null && !createdFrom.isBefore(createdTo)) {
-            throw new InvalidNotificationEventQueryException("created_from must be earlier than created_to");
-        }
+    @AssertTrue(message = "created_from must be earlier than created_to")
+    public boolean isCreationDateRangeValid() {
+        return createdFrom == null || createdTo == null || createdFrom.isBefore(createdTo);
     }
 }

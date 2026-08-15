@@ -3,13 +3,14 @@ package com.cobre.notifications.domain.model;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 
 public record NotificationEvent(
-        @NotBlank String eventId,
-        @NotBlank String clientId,
-        @NotBlank String eventType,
+        @NotBlank @Size(max = 64) String eventId,
+        @NotBlank @Size(max = 64) String clientId,
+        @NotBlank @Size(max = 128) String eventType,
         @NotBlank String content,
         @NotNull Instant createdAt,
         Instant deliveryDate,
