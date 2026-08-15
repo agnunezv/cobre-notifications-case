@@ -1,7 +1,9 @@
 package com.cobre.notifications;
 
 import com.cobre.notifications.application.model.AmbiguousNotificationSubscriptionException;
+import com.cobre.notifications.application.model.ConfigureNotificationSubscriptionCommand;
 import com.cobre.notifications.application.model.NotificationSubscriptionQuery;
+import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionUseCase;
 import com.cobre.notifications.application.port.inbound.ResolveNotificationSubscriptionUseCase;
 import com.cobre.notifications.domain.model.InvalidNotificationSubscriptionException;
 import com.cobre.notifications.domain.model.NotificationSubscription;
@@ -15,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -27,6 +30,9 @@ class NotificationSubscriptionResolutionIntegrationTest extends PostgresqlIntegr
 
     @Autowired
     ResolveNotificationSubscriptionUseCase resolveUseCase;
+
+    @Autowired
+    ConfigureNotificationSubscriptionUseCase configureUseCase;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -96,6 +102,101 @@ class NotificationSubscriptionResolutionIntegrationTest extends PostgresqlIntegr
         assertThatExceptionOfType(ConstraintViolationException.class)
                 .isThrownBy(() -> resolveUseCase.resolve(null))
                 .withMessageContaining("must not be null");
+    }
+
+    @Test
+    void configuresASubscriptionIdempotentlyAndReplacesItsEventTypes() {
+        ConfigureNotificationSubscriptionCommand initial = configuration(
+                "CONFIGURED",
+                "CLIENT001",
+                "https://hooks.example.com/initial",
+                Set.of("credit_payment", "debit_payment"),
+                NOW);
+
+        configureUseCase.configure(initial);
+        configureUseCase.configure(initial);
+
+        assertThat(subscriptionCount("CONFIGURED")).isEqualTo(1);
+        assertThat(eventTypes("CONFIGURED"))
+                .containsExactlyInAnyOrder("credit_payment", "debit_payment");
+
+        configureUseCase.configure(configuration(
+                "CONFIGURED",
+                "CLIENT001",
+                "https://hooks.example.com/updated",
+                Set.of("credit_refund"),
+                NOW.plusSeconds(60)));
+
+        assertThat(resolveUseCase.resolve(
+                new NotificationSubscriptionQuery("CLIENT001", "credit_payment"))).isEmpty();
+        NotificationSubscription updated = resolveUseCase.resolve(
+                        new NotificationSubscriptionQuery("CLIENT001", "credit_refund"))
+                .orElseThrow();
+        assertThat(updated.endpointUrl())
+                .isEqualTo(URI.create("https://hooks.example.com/updated"));
+        assertThat(eventTypes("CONFIGURED")).containsExactly("credit_refund");
+    }
+
+    @Test
+    void doesNotReassignAnExistingSubscriptionToAnotherClient() {
+        insertSubscription(
+                "OWNED",
+                "CLIENT002",
+                "https://hooks.example.com/original",
+                true,
+                "credit_payment");
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> configureUseCase.configure(configuration(
+                        "OWNED",
+                        "CLIENT001",
+                        "https://hooks.example.com/reassigned",
+                        Set.of("debit_payment"),
+                        NOW.plusSeconds(60))))
+                .withMessage("Subscription OWNED is already assigned to another client");
+
+        NotificationSubscription original = resolveUseCase.resolve(
+                        new NotificationSubscriptionQuery("CLIENT002", "credit_payment"))
+                .orElseThrow();
+        assertThat(original.endpointUrl())
+                .isEqualTo(URI.create("https://hooks.example.com/original"));
+        assertThat(resolveUseCase.resolve(
+                new NotificationSubscriptionQuery("CLIENT001", "debit_payment"))).isEmpty();
+    }
+
+    private ConfigureNotificationSubscriptionCommand configuration(
+            String subscriptionId,
+            String clientId,
+            String endpointUrl,
+            Set<String> eventTypes,
+            Instant configuredAt) {
+        return new ConfigureNotificationSubscriptionCommand(
+                new NotificationSubscription(
+                        subscriptionId,
+                        clientId,
+                        URI.create(endpointUrl)),
+                eventTypes,
+                configuredAt);
+    }
+
+    private int subscriptionCount(String subscriptionId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM subscriptions WHERE subscription_id = ?",
+                Integer.class,
+                subscriptionId);
+        return count == null ? 0 : count;
+    }
+
+    private java.util.List<String> eventTypes(String subscriptionId) {
+        return jdbcTemplate.queryForList(
+                """
+                SELECT event_type
+                FROM subscription_event_types
+                WHERE subscription_id = ?
+                ORDER BY event_type
+                """,
+                String.class,
+                subscriptionId);
     }
 
     private void insertSubscription(

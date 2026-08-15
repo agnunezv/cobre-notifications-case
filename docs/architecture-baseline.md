@@ -11,6 +11,8 @@ out explicitly rather than presented as part of the current system.
 V1 provides:
 
 - Configurable, idempotent import of the case notification JSON file.
+- Optional configuration bootstrap for the HTTPS subscription used in a local
+  demonstration.
 - Tenant-safe subscription resolution by client and event type.
 - At-least-once webhook delivery over HTTPS with configurable retries.
 - Durable event state, delivery cycles, and individual attempt outcomes.
@@ -103,6 +105,11 @@ uses the time accepted by this platform as `created_at`, preserves the source
 `delivery_date`, and inserts events in batches. `ON CONFLICT (event_id) DO
 NOTHING` makes repeated startup imports idempotent. The adapter can later be
 replaced by a broker consumer without changing the delivery use cases.
+
+The optional subscription bootstrap provides the client, HTTPS endpoint, and
+event types needed for the demonstration. It updates one stable subscription
+identifier idempotently and cannot reassign that identifier to another client.
+It is not a replacement for a production subscription-management capability.
 
 ### Self-service API
 
