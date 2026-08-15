@@ -114,6 +114,20 @@ class NotificationApplicationResultValidationTest {
                 .isEmpty();
     }
 
+    @Test
+    void requiresEveryClaimedDeliveryToHaveOneBatchOutcome() {
+        NotificationDeliveryBatchResult result = new NotificationDeliveryBatchResult(
+                5,
+                1,
+                1,
+                1,
+                1);
+
+        assertThat(validator.validate(result))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("every claimed delivery must have exactly one batch outcome");
+    }
+
     private NotificationDeliveryAttemptCompletion completion(
             DeliveryStatus nextStatus,
             Instant nextAttemptAt) {

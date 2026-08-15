@@ -49,7 +49,15 @@ V1 applies one global, configurable policy. `maximum-attempts` includes the
 initial attempt, and `delays` provides one duration for every automatic retry.
 The default is four total attempts with delays of 1, 5, and 30 seconds.
 
+## Batch processing
+
+V1 processes each claimed batch sequentially and isolates unexpected failures
+per event so one notification cannot stop the rest of the batch. Batch size and
+lease duration must be configured together: the lease must cover the worst-case
+processing time of the sequential batch. If this limits throughput, bounded
+parallelism or smaller claims should be introduced before increasing batch size.
+
 ## Deferred details
 
-Lease recovery and worker orchestration will be defined in their corresponding
+Lease recovery and scheduled polling will be defined in their corresponding
 delivery worker increments.

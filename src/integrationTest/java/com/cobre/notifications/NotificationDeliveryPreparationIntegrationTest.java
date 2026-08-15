@@ -2,12 +2,15 @@ package com.cobre.notifications;
 
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
+import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
 import com.cobre.notifications.application.model.NotificationDeliveryFailureCategory;
 import com.cobre.notifications.application.model.PreparedNotificationDelivery;
 import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliveriesUseCase;
 import com.cobre.notifications.application.port.inbound.CompleteNotificationDeliveryAttemptUseCase;
 import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliveryUseCase;
+import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
+import com.cobre.notifications.application.port.outbound.NotificationDeliveryGateway;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +57,9 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
 
     @Autowired
     CompleteNotificationDeliveryAttemptUseCase completeAttemptUseCase;
+
+    @Autowired
+    ProcessNotificationDeliveryBatchUseCase processBatchUseCase;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -275,6 +281,25 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void processesAClaimedBatchFromPreparationThroughCompletion() {
+        insertSubscription("SUB001", "https://hooks.example.com/notifications", true);
+        insertEvent("BATCH_001", "PENDING", NOW.minusSeconds(2), null, null);
+        insertEvent("BATCH_002", "PENDING", NOW.minusSeconds(1), null, null);
+
+        NotificationDeliveryBatchResult result = processBatchUseCase.process(
+                new ClaimNotificationDeliveriesCommand(
+                        WORKER_ID,
+                        2,
+                        Duration.ofSeconds(30)));
+
+        assertThat(result).isEqualTo(new NotificationDeliveryBatchResult(2, 0, 2, 0, 0));
+        assertThat(persistedEvent("BATCH_001").status()).isEqualTo("COMPLETED");
+        assertThat(persistedEvent("BATCH_002").status()).isEqualTo("COMPLETED");
+        assertThat(onlyAttempt("BATCH_001").result()).isEqualTo("SUCCESS");
+        assertThat(onlyAttempt("BATCH_002").result()).isEqualTo("SUCCESS");
     }
 
     private ClaimedNotificationDelivery claim(String expectedEventId) {
@@ -538,6 +563,17 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         @Primary
         Clock fixedClock() {
             return Clock.fixed(NOW, ZoneOffset.UTC);
+        }
+
+        @Bean
+        @Primary
+        NotificationDeliveryGateway successfulDeliveryGateway() {
+            return delivery -> new WebhookDeliveryOutcome(
+                    DeliveryAttemptResult.SUCCESS,
+                    204,
+                    null,
+                    null,
+                    18);
         }
     }
 }
