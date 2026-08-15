@@ -1,0 +1,42 @@
+# Notification Delivery Lifecycle
+
+This document defines the state of the current delivery cycle. Individual HTTP
+attempts are recorded separately and do not replace the event state.
+
+## States
+
+- `PENDING`: ready to be claimed for delivery.
+- `PROCESSING`: currently owned by a worker.
+- `RETRY_SCHEDULED`: waiting for the next permitted attempt.
+- `COMPLETED`: accepted by the client.
+- `FAILED`: the current delivery cycle ended without success.
+
+## State transitions
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> PROCESSING: Worker claims event
+    PROCESSING --> COMPLETED: Client returns 2xx
+    PROCESSING --> RETRY_SCHEDULED: Retryable failure or timeout
+    RETRY_SCHEDULED --> PROCESSING: Retry becomes due
+    PROCESSING --> FAILED: Terminal failure or retries exhausted
+    FAILED --> PENDING: Accepted replay starts a new cycle
+    COMPLETED --> [*]
+```
+
+## Rules
+
+1. A new event starts as `PENDING`.
+2. Only a successfully claimed event moves to `PROCESSING`.
+3. A `2xx` response completes the current cycle. A timeout is treated as
+   ambiguous and follows the retry path.
+4. A retryable failure moves to `RETRY_SCHEDULED`; a terminal failure or an
+   exhausted retry policy moves to `FAILED`.
+5. Replay is accepted only for `FAILED` events. It starts a new delivery cycle
+   with new attempts while preserving the same event identifier.
+
+## Deferred details
+
+Retry delays, maximum attempts, lease recovery, and terminal HTTP
+classifications will be defined with the delivery worker increment.
