@@ -27,11 +27,12 @@ class PostgresqlFoundationIntegrationTest extends PostgresqlIntegrationTestSuppo
                 "SELECT indexname FROM pg_indexes WHERE tablename = 'notification_events'",
                 String.class);
 
-        assertThat(migrationCount).isEqualTo(2);
+        assertThat(migrationCount).isEqualTo(3);
         assertThat(eventsTable).isEqualTo("notification_events");
         assertThat(eventIndexes).contains(
                 "idx_notification_events_client_created",
                 "idx_notification_events_client_status_created",
-                "idx_notification_events_subscription");
+                "idx_notification_events_subscription",
+                "idx_notification_events_claimable");
     }
 }

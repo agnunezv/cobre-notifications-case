@@ -1,6 +1,7 @@
 package com.cobre.notifications;
 
 import com.cobre.notifications.adapter.in.bootstrap.NotificationEventJsonImporter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
@@ -30,6 +31,12 @@ class NotificationEventJsonImportIntegrationTest extends PostgresqlIntegrationTe
 
     @Autowired
     NotificationEventJsonImporter jsonImporter;
+
+    @BeforeEach
+    void resetImportedEvents() throws Exception {
+        jdbcTemplate.update("DELETE FROM notification_events");
+        jsonImporter.run(new DefaultApplicationArguments(new String[0]));
+    }
 
     @Test
     void importsTheJsonFileIdempotentlyAndPreservesItsDeliveryDate() throws Exception {

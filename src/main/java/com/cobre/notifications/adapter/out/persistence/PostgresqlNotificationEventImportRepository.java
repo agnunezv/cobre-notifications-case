@@ -1,6 +1,7 @@
 package com.cobre.notifications.adapter.out.persistence;
 
 import com.cobre.notifications.application.port.outbound.NotificationEventImportRepository;
+import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.NotificationEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -24,9 +25,10 @@ public class PostgresqlNotificationEventImportRepository implements Notification
                 created_at,
                 delivery_date,
                 delivery_status,
+                next_attempt_at,
                 attempt_history_complete,
                 updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, FALSE, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, FALSE, ?)
             ON CONFLICT (event_id) DO NOTHING
             """;
 
@@ -59,7 +61,12 @@ public class PostgresqlNotificationEventImportRepository implements Notification
                         statement.setTimestamp(6, Timestamp.from(event.deliveryDate()));
                     }
                     statement.setString(7, event.deliveryStatus().name());
-                    statement.setTimestamp(8, Timestamp.from(event.createdAt()));
+                    if (event.deliveryStatus() == DeliveryStatus.PENDING) {
+                        statement.setTimestamp(8, Timestamp.from(event.createdAt()));
+                    } else {
+                        statement.setNull(8, Types.TIMESTAMP_WITH_TIMEZONE);
+                    }
+                    statement.setTimestamp(9, Timestamp.from(event.createdAt()));
                 });
 
         int inserted = 0;

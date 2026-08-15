@@ -1,0 +1,41 @@
+package com.cobre.notifications.application.service;
+
+import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
+import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
+import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliveriesUseCase;
+import com.cobre.notifications.application.port.outbound.NotificationDeliveryClaimRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+
+@Service
+public class NotificationDeliveryClaimService implements ClaimNotificationDeliveriesUseCase {
+
+    private final NotificationDeliveryClaimRepository repository;
+    private final Clock clock;
+
+    public NotificationDeliveryClaimService(
+            NotificationDeliveryClaimRepository repository,
+            Clock clock) {
+        this.repository = repository;
+        this.clock = clock;
+    }
+
+    @Override
+    @Transactional
+    public List<ClaimedNotificationDelivery> claimDue(ClaimNotificationDeliveriesCommand command) {
+        Objects.requireNonNull(command, "command must not be null");
+
+        Instant claimedAt = clock.instant();
+        Instant leaseUntil = claimedAt.plus(command.leaseDuration());
+        return repository.claimDue(
+                command.workerId(),
+                claimedAt,
+                leaseUntil,
+                command.batchSize());
+    }
+}
