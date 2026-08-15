@@ -1,6 +1,8 @@
 package com.cobre.notifications.application.model;
 
+import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.DeliveryStatus;
+import com.cobre.notifications.domain.model.NotificationDestination;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -9,8 +11,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,5 +82,67 @@ class NotificationApplicationResultValidationTest {
         mutableItems.clear();
 
         assertThat(page.items()).containsExactly(summary);
+    }
+
+    @Test
+    void validatesTheStatusSelectedForAnAttemptOutcome() {
+        NotificationDeliveryAttemptCompletion completion = completion(
+                DeliveryStatus.COMPLETED,
+                null);
+
+        assertThat(validator.validate(completion))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("nextStatus must match the delivery outcome");
+    }
+
+    @Test
+    void requiresAFutureTimeForAScheduledRetry() {
+        NotificationDeliveryAttemptCompletion completion = completion(
+                DeliveryStatus.RETRY_SCHEDULED,
+                NOW);
+
+        assertThat(validator.validate(completion))
+                .extracting(ConstraintViolation::getMessage)
+                .containsExactly("nextAttemptAt is required only for a future scheduled retry");
+    }
+
+    @Test
+    void acceptsAConsistentScheduledRetry() {
+        assertThat(validator.validate(completion(
+                DeliveryStatus.RETRY_SCHEDULED,
+                NOW.plusSeconds(1))))
+                .isEmpty();
+    }
+
+    private NotificationDeliveryAttemptCompletion completion(
+            DeliveryStatus nextStatus,
+            Instant nextAttemptAt) {
+        UUID attemptId = UUID.fromString("893c93dc-9fa2-4437-ae4d-f96448af98ad");
+        PreparedNotificationDelivery delivery = new PreparedNotificationDelivery(
+                attemptId,
+                "EVT001",
+                "CLIENT001",
+                "credit_payment",
+                "Payment confirmed",
+                new NotificationDestination(
+                        "SUB001",
+                        URI.create("https://hooks.example.com/notifications")),
+                1,
+                1,
+                attemptId.toString(),
+                NOW.minusSeconds(1));
+        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(
+                DeliveryAttemptResult.RETRYABLE_FAILURE,
+                503,
+                NotificationDeliveryFailureCategory.HTTP_RESPONSE,
+                "The webhook endpoint returned HTTP 503",
+                25);
+
+        return new NotificationDeliveryAttemptCompletion(
+                delivery,
+                outcome,
+                nextStatus,
+                nextAttemptAt,
+                NOW);
     }
 }

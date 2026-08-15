@@ -36,6 +36,12 @@ stateDiagram-v2
    retry policy moves to `FAILED`.
 5. Replay is accepted only for `FAILED` events. It starts a new delivery cycle
    with new attempts while preserving the same event identifier.
+6. The remote HTTP call runs outside the database transaction. Completing an
+   attempt locks its current event and attempt rows, then records both results
+   atomically.
+7. A duplicated or late result cannot overwrite an attempt that is already
+   closed. Successful attempts set the operational `delivered_at`; the source
+   `delivery_date` remains unchanged.
 
 ## Retry policy
 

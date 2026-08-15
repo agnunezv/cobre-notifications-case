@@ -58,7 +58,6 @@ public class PostgresqlNotificationDeliveryPreparationRepository
     private static final String FAIL_CONFIGURATION_SQL = """
             UPDATE notification_events AS notification
             SET delivery_status = 'FAILED',
-                delivery_date = :operationAt,
                 next_attempt_at = NULL,
                 lease_owner = NULL,
                 lease_until = NULL,
