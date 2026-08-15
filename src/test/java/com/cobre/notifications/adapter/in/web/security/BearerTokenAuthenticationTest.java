@@ -20,10 +20,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(properties = {
-        "notifications.security.clients[0].client-id=CLIENT001",
-        "notifications.security.clients[0].token=client-001-test-token"
-})
+@WebMvcTest(
+        controllers = BearerTokenAuthenticationTest.TestController.class,
+        properties = {
+                "notifications.security.clients[0].client-id=CLIENT001",
+                "notifications.security.clients[0].token=client-001-test-token"
+        })
 @Import({SecurityConfiguration.class, BearerTokenAuthenticationTest.TestController.class})
 class BearerTokenAuthenticationTest {
 
