@@ -57,7 +57,11 @@ lease duration must be configured together: the lease must cover the worst-case
 processing time of the sequential batch. If this limits throughput, bounded
 parallelism or smaller claims should be introduced before increasing batch size.
 
+Scheduled polling is disabled by default to prevent accidental outbound calls.
+When enabled, one fixed-delay task runs per application instance. PostgreSQL
+claim locking coordinates multiple instances without scheduling the same event
+for two workers.
+
 ## Deferred details
 
-Lease recovery and scheduled polling will be defined in their corresponding
-delivery worker increments.
+Lease recovery will be defined in its corresponding delivery worker increment.

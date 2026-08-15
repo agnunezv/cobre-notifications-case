@@ -24,6 +24,13 @@ notifications:
     retry:
       maximum-attempts: ${NOTIFICATION_RETRY_MAX_ATTEMPTS:4}
       delays: ${NOTIFICATION_RETRY_DELAYS:1s,5s,30s}
+    worker:
+      enabled: ${NOTIFICATION_WORKER_ENABLED:false}
+      worker-id: ${NOTIFICATION_WORKER_ID:${HOSTNAME:local-worker}}
+      batch-size: ${NOTIFICATION_WORKER_BATCH_SIZE:10}
+      poll-interval: ${NOTIFICATION_WORKER_POLL_INTERVAL:1s}
+      initial-delay: ${NOTIFICATION_WORKER_INITIAL_DELAY:5s}
+      lease-duration: ${NOTIFICATION_WORKER_LEASE_DURATION:2m}
   json-import:
     enabled: ${NOTIFICATION_JSON_IMPORT_ENABLED:false}
     location: classpath:imports/notification_events.json
