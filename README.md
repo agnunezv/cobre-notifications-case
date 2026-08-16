@@ -67,9 +67,9 @@ NOTIFICATION_CLIENT_003_TOKEN=replace-with-a-client-token
 NOTIFICATION_MONITORING_TOKEN=replace-with-a-monitoring-token
 ```
 
-The supplied event file is imported on startup when `NOTIFICATION_JSON_IMPORT_ENABLED=true`. Repeated imports are idempotent by `event_id`.
+The supplied event file is imported on startup when `NOTIFICATION_JSON_IMPORT_ENABLED=true`. Repeated imports are idempotent by `event_id`. `NOTIFICATION_JSON_IMPORT_LOCATION` defaults to the bundled `classpath:imports/notification_events.json`; set it to an absolute `file:/...` resource to run an external demo fixture without rebuilding the application.
 
-### 2. Create local infrastructure secrets
+### 2. Create local observability secrets (optional)
 
 Compose reads secrets from ignored local files. The Prometheus token must contain the same value configured as `NOTIFICATION_MONITORING_TOKEN`:
 
@@ -80,14 +80,15 @@ printf '%s' 'replace-with-a-grafana-password' > .docker/secrets/grafana-admin-pa
 printf '%s' 'replace-with-an-alert-webhook-token' > .docker/secrets/alertmanager-webhook-token
 ```
 
-Neither `.env` nor `.docker/` is tracked by Git.
+These files are only required for the observability stack. Neither `.env` nor `.docker/` is tracked by Git.
 
-### 3. Start PostgreSQL and the application
+### 3. Start the application
 
 ```bash
-docker compose up -d --wait postgres
 ./gradlew bootRun
 ```
+
+Spring Boot reads `.env` from the project root, starts PostgreSQL through Docker Compose, waits for its healthcheck, and then runs Flyway before accepting requests. Stopping `bootRun` also stops the PostgreSQL container that it started; the named volume and its data remain available for the next run.
 
 Verify the application:
 
@@ -160,10 +161,18 @@ Delivery is intentionally at-least-once. The shared receiver gets `client_id` in
 
 ## Observability
 
-Start the optional local monitoring profile while the application is running on port `8080`:
+Start the application and the complete local monitoring profile with one task:
 
 ```bash
-docker compose --profile observability up -d
+./gradlew bootRunObservability
+```
+
+In IntelliJ, the same entry point is available under **Gradle → Tasks → application → bootRunObservability**.
+
+This task starts PostgreSQL, Prometheus, Alertmanager, and Grafana before the application. It intentionally uses a `start-only` Compose lifecycle: stopping the Java process in IntelliJ leaves the monitoring stack running so Prometheus can detect the outage and Alertmanager can emit the firing and recovery notifications. Restart the same task to bring the application back. When the demonstration is over, stop the infrastructure explicitly:
+
+```bash
+docker compose --profile observability stop
 ```
 
 | Component | URL | Purpose |

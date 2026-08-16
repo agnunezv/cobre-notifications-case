@@ -4,6 +4,7 @@ import com.github.spotbugs.snom.SpotBugsTask
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
+import org.springframework.boot.gradle.tasks.run.BootRun
 
 plugins {
     id 'java'
@@ -119,6 +120,7 @@ dependencies {
     implementation platform(SpringBootPlugin.BOM_COORDINATES)
     implementation platform('com.fasterxml.jackson:jackson-bom:2.21.5')
     implementation platform('org.apache.logging.log4j:log4j-bom:2.25.5')
+    developmentOnly platform(SpringBootPlugin.BOM_COORDINATES)
     annotationProcessor platform(SpringBootPlugin.BOM_COORDINATES)
     testImplementation platform(SpringBootPlugin.BOM_COORDINATES)
 
@@ -139,6 +141,8 @@ dependencies {
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
     runtimeOnly 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     runtimeOnly 'org.postgresql:postgresql:42.7.13'
@@ -153,6 +157,15 @@ dependencies {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+}
+
+tasks.register('bootRunObservability', BootRun) {
+    group = 'application'
+    description = 'Runs the application with PostgreSQL and the local observability stack.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.cobre.notifications.NotificationPlatformApplication'
+    args '--spring.docker.compose.profiles.active=observability',
+            '--spring.docker.compose.lifecycle-management=start-only'
 }
 
 tasks.register('integrationTest', Test) {

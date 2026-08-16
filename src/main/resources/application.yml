@@ -48,7 +48,7 @@ notifications:
       lease-duration: ${NOTIFICATION_WORKER_LEASE_DURATION:2m}
   json-import:
     enabled: ${NOTIFICATION_JSON_IMPORT_ENABLED:false}
-    location: classpath:imports/notification_events.json
+    location: ${NOTIFICATION_JSON_IMPORT_LOCATION:classpath:imports/notification_events.json}
   subscription-bootstrap:
     enabled: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENABLED:false}
     subscriptions:
