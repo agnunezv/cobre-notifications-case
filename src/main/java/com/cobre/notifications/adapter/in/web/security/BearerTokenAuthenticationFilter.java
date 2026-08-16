@@ -52,7 +52,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     private void authenticate(String token) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    ClientTokenAuthentication.unauthenticated(token));
+                    BearerTokenAuthentication.unauthenticated(token));
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);

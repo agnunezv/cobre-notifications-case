@@ -2,6 +2,7 @@ package com.cobre.notifications.adapter.in.scheduling;
 
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
+import com.cobre.notifications.application.model.PreparedNotificationDelivery;
 import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
@@ -85,7 +86,9 @@ class ScheduledNotificationDeliveryWorkerTest {
         private Duration batchFailureDuration;
 
         @Override
-        public void recordAttempt(WebhookDeliveryOutcome outcome) {
+        public void recordAttempt(
+                PreparedNotificationDelivery delivery,
+                WebhookDeliveryOutcome outcome) {
         }
 
         @Override

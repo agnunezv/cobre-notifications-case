@@ -33,13 +33,15 @@ public class NotificationDeliveryExecutionService implements DeliverPreparedNoti
     @Override
     public boolean deliver(PreparedNotificationDelivery delivery) {
         WebhookDeliveryOutcome outcome = deliveryGateway.deliver(delivery);
-        recordAttempt(outcome);
+        recordAttempt(delivery, outcome);
         return completeAttempt.complete(delivery, outcome);
     }
 
-    private void recordAttempt(WebhookDeliveryOutcome outcome) {
+    private void recordAttempt(
+            PreparedNotificationDelivery delivery,
+            WebhookDeliveryOutcome outcome) {
         try {
-            metrics.recordAttempt(outcome);
+            metrics.recordAttempt(delivery, outcome);
         } catch (RuntimeException exception) {
             LOGGER.warn("Notification delivery attempt metrics could not be recorded", exception);
         }

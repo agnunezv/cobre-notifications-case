@@ -65,7 +65,9 @@ class NotificationDeliveryExecutionServiceTest {
                 10);
         NotificationDeliveryMetrics failingMetrics = new NoOpMetrics() {
             @Override
-            public void recordAttempt(WebhookDeliveryOutcome ignored) {
+            public void recordAttempt(
+                    PreparedNotificationDelivery ignoredDelivery,
+                    WebhookDeliveryOutcome ignoredOutcome) {
                 throw new IllegalStateException("Metrics unavailable");
             }
         };
@@ -80,7 +82,9 @@ class NotificationDeliveryExecutionServiceTest {
     private NotificationDeliveryMetrics metrics(AtomicReference<WebhookDeliveryOutcome> measured) {
         return new NoOpMetrics() {
             @Override
-            public void recordAttempt(WebhookDeliveryOutcome outcome) {
+            public void recordAttempt(
+                    PreparedNotificationDelivery ignoredDelivery,
+                    WebhookDeliveryOutcome outcome) {
                 measured.set(outcome);
             }
         };
@@ -106,7 +110,9 @@ class NotificationDeliveryExecutionServiceTest {
     private static class NoOpMetrics implements NotificationDeliveryMetrics {
 
         @Override
-        public void recordAttempt(WebhookDeliveryOutcome outcome) {
+        public void recordAttempt(
+                PreparedNotificationDelivery delivery,
+                WebhookDeliveryOutcome outcome) {
         }
 
         @Override

@@ -30,16 +30,18 @@ class NotificationSecurityPropertiesTest {
 
     @Test
     void allowsAnEmptyTokenToDisableAConfiguredPlaceholder() {
-        NotificationSecurityProperties properties = new NotificationSecurityProperties(List.of(
-                new NotificationSecurityProperties.ClientCredential("CLIENT001", "")));
+        NotificationSecurityProperties properties = new NotificationSecurityProperties(
+                List.of(new NotificationSecurityProperties.ClientCredential("CLIENT001", "")),
+                new NotificationSecurityProperties.MonitoringCredential(null));
 
         assertThat(validator.validate(properties)).isEmpty();
     }
 
     @Test
     void requiresAClientIdentifierWhenATokenIsConfigured() {
-        NotificationSecurityProperties properties = new NotificationSecurityProperties(List.of(
-                new NotificationSecurityProperties.ClientCredential(" ", "configured-token")));
+        NotificationSecurityProperties properties = new NotificationSecurityProperties(
+                List.of(new NotificationSecurityProperties.ClientCredential(" ", "configured-token")),
+                new NotificationSecurityProperties.MonitoringCredential(null));
 
         assertThat(validator.validate(properties))
                 .extracting(ConstraintViolation::getMessage)

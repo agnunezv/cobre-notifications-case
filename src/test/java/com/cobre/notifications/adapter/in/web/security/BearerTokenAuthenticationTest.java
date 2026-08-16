@@ -24,7 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = BearerTokenAuthenticationTest.TestController.class,
         properties = {
                 "notifications.security.clients[0].client-id=CLIENT001",
-                "notifications.security.clients[0].token=client-001-test-token"
+                "notifications.security.clients[0].token=client-001-test-token",
+                "notifications.security.monitoring.token=monitoring-test-token"
         })
 @Import({SecurityConfiguration.class, BearerTokenAuthenticationTest.TestController.class})
 class BearerTokenAuthenticationTest {
@@ -38,6 +39,25 @@ class BearerTokenAuthenticationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.client_id").value("CLIENT001"));
+    }
+
+    @Test
+    void authorizesOnlyTheMonitoringIdentityForInternalEndpoints() throws Exception {
+        mockMvc.perform(get("/internal/monitoring/test")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer monitoring-test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subject").value("INTERNAL_MONITORING"));
+
+        mockMvc.perform(get("/internal/monitoring/test")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-test-token"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void doesNotAllowTheMonitoringIdentityToImpersonateAClient() throws Exception {
+        mockMvc.perform(get("/notification_events/test")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer monitoring-test-token"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -81,6 +101,12 @@ class BearerTokenAuthenticationTest {
         @GetMapping("/actuator/health")
         Map<String, String> health() {
             return Map.of("status", "UP");
+        }
+
+        @GetMapping("/internal/monitoring/test")
+        Map<String, String> authenticatedMonitoringIdentity(
+                @AuthenticationPrincipal MonitoringPrincipal principal) {
+            return Map.of("subject", principal.subject());
         }
     }
 }

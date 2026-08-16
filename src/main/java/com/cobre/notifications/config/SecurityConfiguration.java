@@ -2,8 +2,8 @@ package com.cobre.notifications.config;
 
 import com.cobre.notifications.adapter.in.web.security.BearerTokenAuthenticationEntryPoint;
 import com.cobre.notifications.adapter.in.web.security.BearerTokenAuthenticationFilter;
-import com.cobre.notifications.adapter.in.web.security.ClientTokenAuthenticationProvider;
-import com.cobre.notifications.adapter.in.web.security.ClientTokenRegistry;
+import com.cobre.notifications.adapter.in.web.security.BearerTokenAuthenticationProvider;
+import com.cobre.notifications.adapter.in.web.security.BearerTokenRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.DispatcherType;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -23,13 +23,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfiguration {
 
     @Bean
-    ClientTokenRegistry clientTokenRegistry(NotificationSecurityProperties properties) {
-        return new ClientTokenRegistry(properties);
+    BearerTokenRegistry bearerTokenRegistry(NotificationSecurityProperties properties) {
+        return new BearerTokenRegistry(properties);
     }
 
     @Bean
-    ClientTokenAuthenticationProvider clientTokenAuthenticationProvider(ClientTokenRegistry tokenRegistry) {
-        return new ClientTokenAuthenticationProvider(tokenRegistry);
+    BearerTokenAuthenticationProvider bearerTokenAuthenticationProvider(BearerTokenRegistry tokenRegistry) {
+        return new BearerTokenAuthenticationProvider(tokenRegistry);
     }
 
     @Bean
@@ -40,7 +40,7 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            ClientTokenAuthenticationProvider authenticationProvider,
+            BearerTokenAuthenticationProvider authenticationProvider,
             BearerTokenAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
         var authenticationManager = new ProviderManager(authenticationProvider);
         BearerTokenAuthenticationFilter bearerTokenFilter =
@@ -56,7 +56,15 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers(
+                                "/actuator/prometheus",
+                                "/actuator/metrics",
+                                "/actuator/metrics/**",
+                                "/actuator/info")
+                        .hasRole("MONITORING")
+                        .requestMatchers("/internal/monitoring/**").hasRole("MONITORING")
+                        .requestMatchers("/notification_events/**").hasRole("CLIENT")
+                        .anyRequest().denyAll())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint))
                 .addFilterBefore(bearerTokenFilter, UsernamePasswordAuthenticationFilter.class)

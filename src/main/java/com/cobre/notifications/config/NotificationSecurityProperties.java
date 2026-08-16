@@ -12,10 +12,12 @@ import java.util.List;
 @Validated
 @ConfigurationProperties(prefix = "notifications.security")
 public record NotificationSecurityProperties(
-        @NotNull List<@NotNull @Valid ClientCredential> clients) {
+        @NotNull List<@NotNull @Valid ClientCredential> clients,
+        @NotNull @Valid MonitoringCredential monitoring) {
 
     public NotificationSecurityProperties {
         clients = clients == null ? List.of() : List.copyOf(clients);
+        monitoring = monitoring == null ? new MonitoringCredential(null) : monitoring;
     }
 
     public record ClientCredential(
@@ -28,5 +30,8 @@ public record NotificationSecurityProperties(
                     || token.isBlank()
                     || clientId != null && !clientId.isBlank();
         }
+    }
+
+    public record MonitoringCredential(String token) {
     }
 }

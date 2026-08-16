@@ -16,6 +16,11 @@ spring:
     problemdetails:
       enabled: true
 
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
 notifications:
   delivery:
     http:
@@ -41,6 +46,8 @@ notifications:
     endpoint-url: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENDPOINT_URL:}
     event-types: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_EVENT_TYPES:}
   security:
+    monitoring:
+      token: ${NOTIFICATION_MONITORING_TOKEN:}
     clients:
       - client-id: CLIENT001
         token: ${NOTIFICATION_CLIENT_001_TOKEN:}
@@ -66,3 +73,4 @@ management:
       percentiles-histogram:
         cobre.notifications.delivery.attempt.duration: true
         cobre.notifications.worker.batch.duration: true
+        http.server.requests: true

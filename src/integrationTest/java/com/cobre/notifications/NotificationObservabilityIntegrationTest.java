@@ -1,10 +1,12 @@
 package com.cobre.notifications;
 
 import com.cobre.notifications.application.model.NotificationDeliveryFailureCategory;
+import com.cobre.notifications.application.model.PreparedNotificationDelivery;
 import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryBacklogRepository;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
+import com.cobre.notifications.domain.model.NotificationDestination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +22,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.Timestamp;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -36,11 +40,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         properties = {
                 "notifications.delivery.worker.enabled=false",
                 "notifications.security.clients[0].client-id=CLIENT001",
-                "notifications.security.clients[0].token=metrics-test-token",
+                "notifications.security.clients[0].token=client-001-test-token",
                 "notifications.security.clients[1].client-id=CLIENT002",
                 "notifications.security.clients[1].token=client-002-test-token",
                 "notifications.security.clients[2].client-id=CLIENT003",
-                "notifications.security.clients[2].token=client-003-test-token"
+                "notifications.security.clients[2].token=client-003-test-token",
+                "notifications.security.monitoring.token=metrics-test-token"
         })
 @AutoConfigureMockMvc
 @AutoConfigureObservability
@@ -80,7 +85,7 @@ class NotificationObservabilityIntegrationTest extends PostgresqlIntegrationTest
     @Test
     void exposesPrometheusMetricsOnlyToAuthenticatedRequests() throws Exception {
         insertEvent("DUE", "PENDING", NOW.minusSeconds(20));
-        metrics.recordAttempt(new WebhookDeliveryOutcome(
+        metrics.recordAttempt(preparedDelivery(), new WebhookDeliveryOutcome(
                 DeliveryAttemptResult.RETRYABLE_FAILURE,
                 null,
                 NotificationDeliveryFailureCategory.TIMEOUT,
@@ -89,6 +94,10 @@ class NotificationObservabilityIntegrationTest extends PostgresqlIntegrationTest
 
         mockMvc.perform(get("/actuator/prometheus"))
                 .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-test-token"))
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/actuator/prometheus")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer metrics-test-token"))
@@ -100,7 +109,10 @@ class NotificationObservabilityIntegrationTest extends PostgresqlIntegrationTest
                 .andExpect(content().string(containsString(
                         "cobre_notifications_delivery_attempts_total")))
                 .andExpect(content().string(containsString(
-                        "cobre_notifications_delivery_attempt_duration_seconds_bucket")));
+                        "cobre_notifications_delivery_attempt_duration_seconds_bucket")))
+                .andExpect(content().string(containsString("client_id=\"CLIENT001\"")))
+                .andExpect(content().string(containsString("event_type=\"credit_payment\"")))
+                .andExpect(content().string(containsString("http_status_class=\"none\"")));
     }
 
     private void insertEvent(String eventId, String status, Instant nextAttemptAt) {
@@ -123,6 +135,23 @@ class NotificationObservabilityIntegrationTest extends PostgresqlIntegrationTest
                 status,
                 nextAttemptAt == null ? null : Timestamp.from(nextAttemptAt),
                 Timestamp.from(NOW.minusSeconds(60)));
+    }
+
+    private PreparedNotificationDelivery preparedDelivery() {
+        UUID attemptId = UUID.randomUUID();
+        return new PreparedNotificationDelivery(
+                attemptId,
+                "DUE",
+                "CLIENT001",
+                "credit_payment",
+                "Test event DUE",
+                new NotificationDestination(
+                        "SUB001",
+                        URI.create("https://hooks.example.com/notifications")),
+                1,
+                1,
+                attemptId.toString(),
+                NOW.minusSeconds(1));
     }
 
     @TestConfiguration

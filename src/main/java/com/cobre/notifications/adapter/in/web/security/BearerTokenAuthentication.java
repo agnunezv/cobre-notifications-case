@@ -6,20 +6,20 @@ import org.springframework.security.core.GrantedAuthority;
 import java.util.Collection;
 import java.util.List;
 
-public final class ClientTokenAuthentication extends AbstractAuthenticationToken {
+public final class BearerTokenAuthentication extends AbstractAuthenticationToken {
 
-    private final ClientPrincipal principal;
+    private final Object principal;
     private String token;
 
-    private ClientTokenAuthentication(String token) {
+    private BearerTokenAuthentication(String token) {
         super(List.of());
         this.principal = null;
         this.token = token;
         setAuthenticated(false);
     }
 
-    private ClientTokenAuthentication(
-            ClientPrincipal principal,
+    private BearerTokenAuthentication(
+            Object principal,
             Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
@@ -27,14 +27,14 @@ public final class ClientTokenAuthentication extends AbstractAuthenticationToken
         setAuthenticated(true);
     }
 
-    public static ClientTokenAuthentication unauthenticated(String token) {
-        return new ClientTokenAuthentication(token);
+    public static BearerTokenAuthentication unauthenticated(String token) {
+        return new BearerTokenAuthentication(token);
     }
 
-    public static ClientTokenAuthentication authenticated(
-            ClientPrincipal principal,
+    public static BearerTokenAuthentication authenticated(
+            Object principal,
             Collection<? extends GrantedAuthority> authorities) {
-        return new ClientTokenAuthentication(principal, authorities);
+        return new BearerTokenAuthentication(principal, authorities);
     }
 
     @Override
@@ -43,7 +43,7 @@ public final class ClientTokenAuthentication extends AbstractAuthenticationToken
     }
 
     @Override
-    public ClientPrincipal getPrincipal() {
+    public Object getPrincipal() {
         return principal;
     }
 
