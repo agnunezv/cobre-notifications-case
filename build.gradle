@@ -1,6 +1,8 @@
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsTask
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
@@ -8,6 +10,7 @@ plugins {
     id 'jacoco'
     id 'com.diffplug.spotless' version '8.9.0'
     id 'com.github.spotbugs' version '6.5.9'
+    id 'info.solidsoft.pitest' version '1.19.0'
     id 'org.springframework.boot' version '3.5.16'
 }
 
@@ -48,20 +51,18 @@ spotless {
 
 spotbugs {
     ignoreFailures = false
-    effort = Effort.valueOf('MAX')
-    reportLevel = Confidence.valueOf('MEDIUM')
+    effort = Enum.valueOf(Effort, 'MAX')
+    reportLevel = Enum.valueOf(Confidence, 'MEDIUM')
     excludeFilter = file('config/spotbugs-exclude.xml')
     runOnCheck = true
 }
 
-tasks.withType(SpotBugsTask).configureEach {
-    reports {
-        html {
-            required = true
-            stylesheet = 'fancy-hist.xsl'
-        }
-        xml.required = false
-    }
+tasks.named('spotbugsMain').configure { Task genericTask ->
+    SpotBugsTask task = genericTask as SpotBugsTask
+    def htmlReport = task.reports.maybeCreate('html')
+    htmlReport.required = true
+    htmlReport.stylesheet = 'fancy-hist.xsl'
+    task.reports.maybeCreate('xml').required = false
 }
 
 sourceSets {
@@ -71,6 +72,27 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+}
+
+pitest {
+    pitestVersion = '1.22.1'
+    junit5PluginVersion = '1.2.3'
+    targetClasses = [
+        'com.cobre.notifications.domain.model.RetryPolicy',
+        'com.cobre.notifications.domain.service.*',
+        'com.cobre.notifications.application.service.*',
+        'com.cobre.notifications.adapter.in.scheduling.*',
+        'com.cobre.notifications.adapter.in.web.security.*',
+        'com.cobre.notifications.adapter.out.observability.*',
+        'com.cobre.notifications.adapter.out.webhook.*'
+    ]
+    testSourceSets = [sourceSets.test]
+    threads = 4
+    outputFormats = ['HTML', 'XML']
+    timestampedReports = false
+    failWhenNoMutations = true
+    mutationThreshold = 70
+    testStrengthThreshold = 80
 }
 
 configurations {
@@ -130,22 +152,24 @@ tasks.named('spotbugsIntegrationTest') {
     enabled = false
 }
 
-tasks.named('jacocoTestReport') {
-    dependsOn tasks.named('test'), tasks.named('integrationTest')
-    executionData tasks.named('test').get(), tasks.named('integrationTest').get()
+tasks.named('jacocoTestReport').configure { Task genericTask ->
+    JacocoReport task = genericTask as JacocoReport
+    task.dependsOn tasks.named('test'), tasks.named('integrationTest')
+    task.executionData tasks.named('test').get(), tasks.named('integrationTest').get()
 
-    reports {
+    task.reports {
         xml.required = true
         csv.required = false
         html.required = true
     }
 }
 
-tasks.named('jacocoTestCoverageVerification') {
-    dependsOn tasks.named('test'), tasks.named('integrationTest')
-    executionData tasks.named('test').get(), tasks.named('integrationTest').get()
+tasks.named('jacocoTestCoverageVerification').configure { Task genericTask ->
+    JacocoCoverageVerification task = genericTask as JacocoCoverageVerification
+    task.dependsOn tasks.named('test'), tasks.named('integrationTest')
+    task.executionData tasks.named('test').get(), tasks.named('integrationTest').get()
 
-    violationRules {
+    task.violationRules {
         rule {
             limit {
                 counter = 'LINE'
