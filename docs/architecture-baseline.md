@@ -184,6 +184,10 @@ self-service API. Production should use short-lived credentials from an
 identity provider, managed secret storage, rotation, narrower authorization
 scopes, and a separate identity or private network for operational endpoints.
 
+The focused [OWASP risk assessment](security-assessment.md) maps the public API
+threats to implemented code and separates current controls from measures that
+belong at a production deployment boundary.
+
 ## Key decisions
 
 | Decision | Trade-off | Revisit when |
