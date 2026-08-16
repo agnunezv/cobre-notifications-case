@@ -177,18 +177,16 @@ enabled gauge and the last successful and failed poll times distinguish a
 deliberately disabled worker from one that is running but no longer making
 progress.
 
-The client and event-type dimensions are appropriate while subscriptions and
-clients remain a bounded configured set. Dynamic client onboarding must be
-accompanied by a cardinality budget; if that budget is exceeded, these labels
-must be allowlisted, aggregated, or moved to an operational analytics store.
-An `event_id` must never become a Prometheus label. Event-level diagnosis uses
-the monitoring-only investigation endpoint and the persisted attempt history.
+The client and event-type dimensions are appropriate because V1 uses a bounded
+configured set of subscriptions and clients. An `event_id` never becomes a
+Prometheus label. Event-level diagnosis uses the monitoring-only investigation
+endpoint and the persisted attempt history.
 
 Backlog gauges describe shared database state, so every application replica
 reports the same value. Dashboards should aggregate these gauges with `max`
 rather than `sum`. Each scrape executes two small indexed PostgreSQL queries;
-this can move to a cached or dedicated exporter if measured scrape load becomes
-material.
+V1 accepts that bounded query cost in exchange for directly observing durable
+delivery state.
 
 Micrometer instruments the application process, while Prometheus, Alertmanager,
 and Grafana run outside it. Prometheus scrapes and stores metrics and evaluates
@@ -226,8 +224,6 @@ available on local port `9090`, Alertmanager on `9093`, and the provisioned
 Grafana dashboard on `3000`; all three ports bind only to the loopback
 interface.
 
-The local stack shares one Docker host for demonstration purposes. Production
-monitoring requires an independent failure domain, a dedicated monitoring
-identity and private management access, durable storage, notification routing,
-and, where justified, high availability. Alert thresholds must also be tuned
-from measured service-level objectives rather than copied from the local demo.
+The local stack shares one Docker host for demonstration purposes and therefore
+does not represent a production monitoring failure domain. Its alert thresholds
+are demo defaults rather than measured service-level objectives.

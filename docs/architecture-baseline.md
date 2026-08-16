@@ -119,8 +119,7 @@ independent of adapter details.
 The optional startup importer reads and validates the supplied JSON file. It
 uses the time accepted by this platform as `created_at`, preserves the source
 `delivery_date`, and inserts events in batches. `ON CONFLICT (event_id) DO
-NOTHING` makes repeated startup imports idempotent. The adapter can later be
-replaced by a broker consumer without changing the delivery use cases.
+NOTHING` makes repeated startup imports idempotent.
 
 The optional subscription bootstrap provides the client, HTTPS endpoint, and
 event types needed for the demonstration. It updates one stable subscription
@@ -190,20 +189,20 @@ belong at a production deployment boundary.
 
 ## Key decisions
 
-| Decision | Trade-off | Revisit when |
+| Decision | Rationale | Trade-off |
 | --- | --- | --- |
-| One Spring Boot deployable | API and worker cannot scale or deploy independently. | Their workload, ownership, or release cadence diverges. |
-| PostgreSQL as state store and work queue | Avoids broker complexity but consumes database capacity through polling and claims. | Measured volume, burst size, or database pressure justifies a broker or outbox path. |
-| At-least-once delivery | A timeout can cause a duplicate even with durable local state. | Strengthen the client idempotency contract; do not promise exactly-once HTTP delivery. |
-| Sequential processing inside each batch | Failure isolation and reasoning are simple, but one slow endpoint delays the rest of the batch. | Latency or throughput requires bounded parallelism. |
-| Offset pagination with a maximum page size | The contract is familiar and adequate for the case dataset, but deep pages become slower. | Dataset size and measured query latency justify cursor pagination. |
-| Static role-scoped bearer tokens | Small local setup with separate client and monitoring permissions but no identity infrastructure. | The API is exposed publicly or requires token lifecycle, audit, and centrally managed scopes. |
-| Client and event type as metric labels | Makes affected clients discoverable without an additional telemetry backend; series count grows with configured clients and event types. | Dynamic onboarding or measured cardinality requires aggregation, allowlisting, or removing these labels. |
-| Separate delivery and runtime dashboards | Keeps client diagnosis focused while still exposing component capacity; operators navigate between two views. | A mature on-call workflow justifies role-specific dashboards or a service catalog. |
-| Alertmanager with a separate local macOS bridge | Demonstrates grouping, routing, deduplication, and recovery without coupling desktop behavior to product code; it is not an on-call channel. | A production environment requires managed receivers, escalation policy, high availability, and an independent monitoring failure domain. |
-| Hexagonal packages in one Gradle module | Keeps the project lightweight; boundaries depend partly on engineering discipline. | Team growth or repeated boundary violations justify module-level enforcement. |
+| One Spring Boot deployable | Keeps the case cohesive and operationally simple. | API and worker share scaling and release boundaries. |
+| PostgreSQL as state store and work queue | Provides durable state and coordinated claims without another runtime dependency. | Polling and claims consume database capacity. |
+| At-least-once delivery | Reflects the ambiguity of failures across an HTTP boundary. | A timeout can produce a duplicate even with durable local state. |
+| Sequential processing inside each batch | Makes failure isolation and execution easy to reason about. | One slow endpoint delays the remaining events in that batch. |
+| Offset pagination with a maximum page size | Provides a familiar bounded contract for the case dataset. | Deep pages become progressively more expensive. |
+| Static role-scoped bearer tokens | Provides client and monitoring isolation with a small local setup. | Does not provide credential lifecycle or centralized identity management. |
+| Client and event type as metric labels | Makes an affected configured client directly discoverable. | Time-series cardinality grows with clients and event types. |
+| Separate delivery and runtime dashboards | Keeps client diagnosis separate from component-capacity analysis. | Operators sometimes navigate between two views. |
+| Alertmanager with a separate local macOS bridge | Demonstrates grouping, routing, deduplication, and recovery outside product code. | The local receiver is not a production on-call channel. |
+| Hexagonal packages in one Gradle module | Keeps boundaries visible without adding module overhead. | Boundary enforcement depends partly on engineering discipline. |
 
-## Current operational gaps
+## Current scope boundaries
 
 - The local monitoring profile can route alerts through Alertmanager to an
   authenticated macOS bridge for the demo. This is not a production on-call
