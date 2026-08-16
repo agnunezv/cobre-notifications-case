@@ -19,10 +19,13 @@ V1 provides:
 - Automatic recovery of expired worker leases.
 - An authenticated API to list, inspect, and replay notification events.
 - Database-backed worker coordination across application instances.
-- Health endpoints, operational logs, and Prometheus delivery metrics.
+- Health endpoints, operational logs, Prometheus delivery metrics, and an
+  optional local monitoring stack.
+- Client-aware delivery diagnostics and a read-only internal investigation
+  endpoint backed by the persisted attempt timeline.
 
 V1 does not provide subscription-management APIs, a message broker, webhook
-signing, dashboards and alerts, or multi-region delivery.
+signing, external alert notifications, or multi-region delivery.
 
 ## System context
 
@@ -36,7 +39,7 @@ flowchart LR
     source -->|Notification events| platform
     client -->|Authenticated query and replay API| platform
     platform -->|Webhook over HTTPS| client
-    platform -->|Health and logs| operator
+    platform -->|Metrics and delivery investigation| operator
 ```
 
 The platform owns notification delivery and its operational history. It does
@@ -55,10 +58,22 @@ flowchart LR
         database[("PostgreSQL<br/>Events, subscriptions, attempts")]
     end
 
+    subgraph monitoring["Monitoring stack"]
+        prometheus["Prometheus<br/>Metrics + alert evaluation"]
+        alertmanager["Alertmanager<br/>Alert grouping + routing"]
+        grafana["Grafana<br/>Operational dashboards"]
+    end
+
+    bridge["Local macOS bridge<br/>Demo-only receiver"]
+
     source -->|Import| service
     client -->|GET and POST API| service
     service -->|HTTPS webhook| client
     service -->|State, history, and work claims| database
+    prometheus -->|Authenticated scrape| service
+    prometheus -->|Firing and resolved alerts| alertmanager
+    alertmanager -->|Authenticated local webhook| bridge
+    grafana -->|Queries| prometheus
 ```
 
 One Spring Boot deployable is sufficient for V1. The API, bootstrap importer,
@@ -124,6 +139,21 @@ The replay endpoint returns `202 Accepted`. A missing event and an event owned
 by another client produce the same `404` response. Replaying an event in any
 state other than `FAILED` produces `409 Conflict`.
 
+### Internal delivery investigation
+
+`GET /internal/monitoring/notification_events/{notification_event_id}` requires
+both a monitoring bearer token and a `client_id` query parameter. It returns
+the event's operational state and ordered attempt timeline, including result,
+HTTP status, bounded failure category, latency, and correlation identifier.
+The response intentionally excludes the payload and destination URL.
+
+The client identifier makes the investigation explicit and prevents an event
+identifier alone from becoming a cross-client lookup. A missing event and an
+event associated with another client both return `404`. The repository reads
+one event by its primary key and its attempts through the existing
+`(event_id, delivery_cycle, attempt_number)` index; no additional index or
+schema migration is required for this access pattern.
+
 ### Notification delivery
 
 The worker claims due rows in bounded batches using PostgreSQL row locks and
@@ -137,17 +167,22 @@ Late results cannot overwrite a recovered delivery.
 
 ## Security and tenant isolation
 
-V1 maps configured bearer tokens to a `client_id`. Tokens are supplied through
-environment configuration and compared using `MessageDigest.isEqual`. Every
-self-service query and replay transition includes the authenticated client in
-its SQL predicate, preventing cross-client reads or mutations.
+V1 maps configured client bearer tokens to a `client_id` and grants them only
+the client role. A separate monitoring token grants only the monitoring role;
+client tokens cannot access internal investigation routes, and the monitoring
+identity cannot impersonate a client on self-service routes. Tokens are
+supplied through environment configuration and compared using
+`MessageDigest.isEqual`. Every self-service query and replay transition
+includes the authenticated client in its SQL predicate, preventing
+cross-client reads or mutations.
 
 Static bearer tokens are appropriate for a local technical case, not for a
-public production API. Production should use short-lived credentials from an
-identity provider, managed secret storage, rotation, authorization scopes, and
-a separate identity or private network for operational endpoints. The local
-Prometheus endpoint remains protected by the current bearer authentication;
-client identities must not authorize monitoring access in production.
+public production API. The local Prometheus endpoint and read-only delivery
+investigation API share the monitoring identity; client identities cannot
+access either operational surface, and the monitoring identity cannot call the
+self-service API. Production should use short-lived credentials from an
+identity provider, managed secret storage, rotation, narrower authorization
+scopes, and a separate identity or private network for operational endpoints.
 
 ## Key decisions
 
@@ -158,14 +193,19 @@ client identities must not authorize monitoring access in production.
 | At-least-once delivery | A timeout can cause a duplicate even with durable local state. | Strengthen the client idempotency contract; do not promise exactly-once HTTP delivery. |
 | Sequential processing inside each batch | Failure isolation and reasoning are simple, but one slow endpoint delays the rest of the batch. | Latency or throughput requires bounded parallelism. |
 | Offset pagination with a maximum page size | The contract is familiar and adequate for the case dataset, but deep pages become slower. | Dataset size and measured query latency justify cursor pagination. |
-| Static bearer-token authentication | Small local setup with no identity infrastructure. | The API is exposed publicly or requires token lifecycle and authorization roles. |
+| Static role-scoped bearer tokens | Small local setup with separate client and monitoring permissions but no identity infrastructure. | The API is exposed publicly or requires token lifecycle, audit, and centrally managed scopes. |
+| Client and event type as metric labels | Makes affected clients discoverable without an additional telemetry backend; series count grows with configured clients and event types. | Dynamic onboarding or measured cardinality requires aggregation, allowlisting, or removing these labels. |
+| Separate delivery and runtime dashboards | Keeps client diagnosis focused while still exposing component capacity; operators navigate between two views. | A mature on-call workflow justifies role-specific dashboards or a service catalog. |
+| Alertmanager with a separate local macOS bridge | Demonstrates grouping, routing, deduplication, and recovery without coupling desktop behavior to product code; it is not an on-call channel. | A production environment requires managed receivers, escalation policy, high availability, and an independent monitoring failure domain. |
 | Hexagonal packages in one Gradle module | Keeps the project lightweight; boundaries depend partly on engineering discipline. | Team growth or repeated boundary violations justify module-level enforcement. |
 
 ## Current operational gaps
 
-- Actuator exports health, JVM, HTTP, backlog, webhook, worker, and lease
-  recovery metrics. A local Prometheus/Grafana stack, dashboards, and alerts
-  remain to be added.
+- The local monitoring profile can route alerts through Alertmanager to an
+  authenticated macOS bridge for the demo. This is not a production on-call
+  destination and does not provide production-grade fault isolation.
+- Prometheus can monitor Grafana and itself while running, but an external
+  monitor is still required to detect loss of the whole monitoring stack.
 - A repeated replay after the first accepted transition returns `409`; V1 does
   not implement an `Idempotency-Key` contract.
 - The attached JSON file is a case-specific ingress adapter, not the target

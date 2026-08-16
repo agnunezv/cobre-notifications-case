@@ -1,0 +1,119 @@
+rule_files:
+  - ../rules/notification-alerts.yml
+
+evaluation_interval: 15s
+
+tests:
+  - name: application unavailability becomes critical
+    interval: 15s
+    input_series:
+      - series: 'up{job="cobre-notification-platform",instance="host.docker.internal:8080",environment="local",service="cobre-notification-platform"}'
+        values: '0+0x4'
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: CobreNotificationPlatformUnavailable
+        exp_alerts:
+          - exp_labels:
+              environment: local
+              instance: host.docker.internal:8080
+              job: cobre-notification-platform
+              service: cobre-notification-platform
+              severity: critical
+            exp_annotations:
+              summary: Notification platform is unavailable
+              description: Prometheus has been unable to scrape the application for 30 seconds.
+
+  - name: an old due event identifies a stalled backlog
+    interval: 15s
+    input_series:
+      - series: 'cobre_notifications_delivery_backlog_oldest_age_seconds{application="cobre-notification-platform"}'
+        values: '121+0x12'
+    alert_rule_test:
+      - eval_time: 2m15s
+        alertname: CobreNotificationBacklogStalled
+        exp_alerts:
+          - exp_labels:
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: Notification backlog is not progressing
+              description: The oldest due notification has been waiting for more than two minutes.
+
+  - name: permanent failures require both ratio and minimum volume
+    interval: 1m
+    input_series:
+      - series: 'cobre_notifications_delivery_attempts_total{client_id="CLIENT001",result="permanent_failure"}'
+        values: '0 1 2 3 4 5 6 7'
+      - series: 'cobre_notifications_delivery_attempts_total{client_id="CLIENT001",result="success"}'
+        values: '0 2 4 6 8 10 12 14'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: CobreNotificationPermanentFailureRatioHigh
+        exp_alerts:
+          - exp_labels:
+              client_id: CLIENT001
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: Permanent delivery failure ratio is high for client CLIENT001
+              description: More than 20% of at least ten recent delivery attempts for this client failed permanently.
+
+  - name: overall failure ratio identifies the affected client
+    interval: 1m
+    input_series:
+      - series: 'cobre_notifications_delivery_attempts_total{client_id="CLIENT002",result="retryable_failure"}'
+        values: '0 2 4 6 8 10 12 14'
+      - series: 'cobre_notifications_delivery_attempts_total{client_id="CLIENT002",result="success"}'
+        values: '0 1 2 3 4 5 6 7'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: CobreNotificationClientFailureRatioHigh
+        exp_alerts:
+          - exp_labels:
+              client_id: CLIENT002
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: Delivery failure ratio is high for client CLIENT002
+              description: More than half of at least ten recent delivery attempts for this client were unsuccessful.
+
+  - name: delivery latency uses the p95 histogram and minimum volume
+    interval: 1m
+    input_series:
+      - series: 'cobre_notifications_delivery_attempt_duration_seconds_bucket{client_id="CLIENT003",le="1"}'
+        values: '0+0x7'
+      - series: 'cobre_notifications_delivery_attempt_duration_seconds_bucket{client_id="CLIENT003",le="2"}'
+        values: '0+0x7'
+      - series: 'cobre_notifications_delivery_attempt_duration_seconds_bucket{client_id="CLIENT003",le="5"}'
+        values: '0+3x7'
+      - series: 'cobre_notifications_delivery_attempt_duration_seconds_bucket{client_id="CLIENT003",le="+Inf"}'
+        values: '0+3x7'
+      - series: 'cobre_notifications_delivery_attempts_total{client_id="CLIENT003",result="success"}'
+        values: '0+3x7'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: CobreNotificationDeliveryLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              client_id: CLIENT003
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: Webhook delivery latency is high for client CLIENT003
+              description: This client's five-minute p95 delivery latency has remained above two seconds.
+
+  - name: recurring lease recovery is visible immediately
+    interval: 1m
+    input_series:
+      - series: 'cobre_notifications_worker_events_total{activity="lease_recovered"}'
+        values: '0 0 1 1 2 2 3 3 3 3 3'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CobreNotificationLeaseRecoveryRecurring
+        exp_alerts:
+          - exp_labels:
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: Worker leases are being recovered repeatedly
+              description: At least three expired leases were recovered during the last ten minutes.

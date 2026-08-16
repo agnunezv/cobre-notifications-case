@@ -1,0 +1,342 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Notification delivery operations",
+      "tooltip": "Open client-aware delivery diagnostics",
+      "type": "link",
+      "url": "/d/cobre-notification-operations/notification-delivery-operations"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Prometheus can scrape the Spring Boot process. DOWN indicates an availability incident, not only a delivery deviation.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"options": {"0": {"color": "red", "text": "DOWN"}, "1": {"color": "green", "text": "UP"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "min(up{job=\"cobre-notification-platform\"})", "instant": true, "legendFormat": "Application", "range": false, "refId": "A"}],
+      "title": "Application",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Prometheus self-scrape health. An external production monitor is still required to detect Prometheus itself being down.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"options": {"0": {"color": "red", "text": "DOWN"}, "1": {"color": "green", "text": "UP"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "max(up{job=\"prometheus\"})", "instant": true, "legendFormat": "Prometheus", "range": false, "refId": "A"}],
+      "title": "Prometheus",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Prometheus can reach Alertmanager, which routes firing and resolved alerts to the configured receiver. DOWN means rules may still evaluate, but operators will not receive notifications.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"options": {"0": {"color": "red", "text": "DOWN"}, "1": {"color": "green", "text": "UP"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "id": 22,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "max(up{job=\"alertmanager\"})", "instant": true, "legendFormat": "Alertmanager", "range": false, "refId": "A"}],
+      "title": "Alert routing",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Prometheus can scrape Grafana. This detects loss of the local visualization layer while metrics remain available.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"options": {"0": {"color": "red", "text": "DOWN"}, "1": {"color": "green", "text": "UP"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "id": 3,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "max(up{job=\"grafana\"})", "instant": true, "legendFormat": "Grafana", "range": false, "refId": "A"}],
+      "title": "Grafana",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Makes the deliberate worker-disabled local mode distinguishable from a worker that has stalled.",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"options": {"0": {"color": "blue", "text": "DISABLED"}, "1": {"color": "green", "text": "ENABLED"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 4},
+      "id": 4,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "max(cobre_notifications_worker_enabled)", "instant": true, "legendFormat": "Worker", "range": false, "refId": "A"}],
+      "title": "Worker mode",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Seconds since the last successful poll. It is intentionally empty when the worker is disabled.",
+      "fieldConfig": {"defaults": {"mappings": [{"options": {"-1": {"color": "blue", "text": "DISABLED"}}, "type": "value"}], "noValue": "UNKNOWN", "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 0}, {"color": "yellow", "value": 15}, {"color": "red", "value": 30}]}, "unit": "s"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 4},
+      "id": 5,
+      "options": {"colorMode": "value", "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "max((time() - cobre_notifications_worker_last_success_seconds) and on(instance) cobre_notifications_worker_enabled == 1) or (vector(-1) and on() max(cobre_notifications_worker_enabled) == 0)", "instant": true, "legendFormat": "Poll age", "range": false, "refId": "A"}],
+      "title": "Last successful poll age",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Total active platform, delivery, capacity, and monitoring alerts.",
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 4},
+      "id": 6,
+      "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"editorMode": "code", "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)", "instant": true, "legendFormat": "Firing", "range": false, "refId": "A"}],
+      "title": "Firing alerts",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Inbound request throughput by route and method. Compare the peak column with latency and saturation before deciding to scale API replicas.",
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "id": 7,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum by (method, uri) (rate(http_server_requests_seconds_count{uri!~\"/actuator.*\",uri=~\"$endpoint\"}[$__rate_interval]))", "legendFormat": "{{method}} {{uri}}", "range": true, "refId": "A"}],
+      "title": "API request throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "p95 server latency by route. Rising latency with thread or database saturation identifies the likely bottleneck.",
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "id": 8,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{uri!~\"/actuator.*\",uri=~\"$endpoint\"}[$__rate_interval])))", "legendFormat": "{{uri}}", "range": true, "refId": "A"}],
+      "title": "API latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "5xx responses as a share of inbound API traffic. The minimum-volume alert prevents noise from isolated requests.",
+      "fieldConfig": {"defaults": {"min": 0, "max": 1, "unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "id": 9,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "(sum(rate(http_server_requests_seconds_count{uri!~\"/actuator.*\",uri=~\"$endpoint\",status=~\"5..\"}[$__rate_interval])) / clamp_min(sum(rate(http_server_requests_seconds_count{uri!~\"/actuator.*\",uri=~\"$endpoint\"}[$__rate_interval])), 0.001)) or vector(0)", "legendFormat": "5xx ratio", "range": true, "refId": "A"}],
+      "title": "API server error ratio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Busy, current, and configured Tomcat threads. Sustained busy threads near the maximum indicate request-execution saturation.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
+      "id": 10,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"editorMode": "code", "expr": "sum(tomcat_threads_busy_threads)", "legendFormat": "Busy", "range": true, "refId": "A"},
+        {"editorMode": "code", "expr": "sum(tomcat_threads_current_threads)", "legendFormat": "Current", "range": true, "refId": "B"},
+        {"editorMode": "code", "expr": "sum(tomcat_threads_config_max_threads)", "legendFormat": "Maximum", "range": true, "refId": "C"}
+      ],
+      "title": "Tomcat thread capacity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Busy Tomcat threads relative to configured capacity. Use the peak with API latency to decide whether request execution is saturated.",
+      "fieldConfig": {"defaults": {"min": 0, "max": 1, "unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16},
+      "id": 11,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum(tomcat_threads_busy_threads) / clamp_min(sum(tomcat_threads_config_max_threads), 1)", "legendFormat": "Thread utilization", "range": true, "refId": "A"}],
+      "title": "Tomcat thread utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Connection supply, usage, and waiters. Pending requests together with high active utilization indicate database-pool saturation.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
+      "id": 12,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"editorMode": "code", "expr": "sum(hikaricp_connections_active)", "legendFormat": "Active", "range": true, "refId": "A"},
+        {"editorMode": "code", "expr": "sum(hikaricp_connections_idle)", "legendFormat": "Idle", "range": true, "refId": "B"},
+        {"editorMode": "code", "expr": "sum(hikaricp_connections_pending)", "legendFormat": "Pending", "range": true, "refId": "C"},
+        {"editorMode": "code", "expr": "sum(hikaricp_connections_max)", "legendFormat": "Maximum", "range": true, "refId": "D"}
+      ],
+      "title": "PostgreSQL connection pool",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Every polling cycle is counted, including empty batches. Failures or a missing success heartbeat expose a worker that is alive but not healthy.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 24},
+      "id": 13,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum by (outcome) (rate(cobre_notifications_worker_polls_total[$__rate_interval]))", "legendFormat": "{{outcome}}", "range": true, "refId": "A"}],
+      "title": "Worker poll rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Business work performed by the worker. Compare claimed and completion peaks with backlog and batch latency before increasing concurrency.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "ops"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 24},
+      "id": 14,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum by (activity) (rate(cobre_notifications_worker_events_total[$__rate_interval]))", "legendFormat": "{{activity}}", "range": true, "refId": "A"}],
+      "title": "Worker event throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "p95 batch duration by outcome. It should remain compatible with the polling interval, HTTP timeout, batch size, and lease duration.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 24},
+      "id": 15,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "histogram_quantile(0.95, sum by (outcome, le) (rate(cobre_notifications_worker_batch_duration_seconds_bucket[$__rate_interval])))", "legendFormat": "{{outcome}}", "range": true, "refId": "A"}],
+      "title": "Worker batch duration p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Process and host CPU utilization. Sustained process CPU near available capacity supports scaling or profiling; a brief peak alone does not.",
+      "fieldConfig": {"defaults": {"min": 0, "max": 1, "unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 32},
+      "id": 16,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"editorMode": "code", "expr": "max(process_cpu_usage)", "legendFormat": "Application", "range": true, "refId": "A"},
+        {"editorMode": "code", "expr": "max(system_cpu_usage)", "legendFormat": "Host", "range": true, "refId": "B"}
+      ],
+      "title": "CPU utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Heap usage relative to the configured maximum. Sustained pressure plus GC pauses suggests memory tuning or leak investigation.",
+      "fieldConfig": {"defaults": {"min": 0, "max": 1, "unit": "percentunit"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 32},
+      "id": 17,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum by (instance) (jvm_memory_used_bytes{area=\"heap\"}) / clamp_min(sum by (instance) (jvm_memory_max_bytes{area=\"heap\"}), 1)", "legendFormat": "{{instance}}", "range": true, "refId": "A"}],
+      "title": "JVM heap utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Live and peak JVM threads. Persistent growth can indicate blocked tasks, excess concurrency, or a thread leak.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 32},
+      "id": 18,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"editorMode": "code", "expr": "max(jvm_threads_live_threads)", "legendFormat": "Live", "range": true, "refId": "A"},
+        {"editorMode": "code", "expr": "max(jvm_threads_peak_threads)", "legendFormat": "Peak", "range": true, "refId": "B"}
+      ],
+      "title": "JVM threads",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Maximum observed GC pause by cause. Correlate pause spikes with heap pressure and API latency.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 40},
+      "id": 19,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "max by (cause, action) (jvm_gc_pause_seconds_max)", "legendFormat": "{{action}} / {{cause}}", "range": true, "refId": "A"}],
+      "title": "JVM garbage-collection pauses",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Prometheus scrape duration for each monitored component. Slow or failing scrapes reduce observability freshness.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 40},
+      "id": 20,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "max by (job) (scrape_duration_seconds{job=~\"cobre-notification-platform|prometheus|grafana|alertmanager\"})", "legendFormat": "{{job}}", "range": true, "refId": "A"}],
+      "title": "Monitoring scrape duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "description": "Samples ingested per scrape. Sudden changes can reveal missing instrumentation or unexpected metric-cardinality growth.",
+      "fieldConfig": {"defaults": {"min": 0, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 40},
+      "id": 21,
+      "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "max by (job) (scrape_samples_scraped{job=~\"cobre-notification-platform|prometheus|grafana|alertmanager\"})", "legendFormat": "{{job}}", "range": true, "refId": "A"}],
+      "title": "Metrics volume per scrape",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 41,
+  "tags": ["cobre", "notifications", "runtime", "capacity"],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {"text": "All", "value": "$__all"},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "definition": "label_values(http_server_requests_seconds_count{job=\"cobre-notification-platform\",uri!~\"/actuator.*\"}, uri)",
+        "includeAll": true,
+        "label": "API endpoint",
+        "multi": true,
+        "name": "endpoint",
+        "options": [],
+        "query": {"query": "label_values(http_server_requests_seconds_count{job=\"cobre-notification-platform\",uri!~\"/actuator.*\"}, uri)", "refId": "PrometheusVariableQueryEditor-Endpoint"},
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {"from": "now-30m", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Platform runtime health",
+  "uid": "cobre-platform-runtime-health",
+  "version": 1,
+  "weekStart": ""
+}

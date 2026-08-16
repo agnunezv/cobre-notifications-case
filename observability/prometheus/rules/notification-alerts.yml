@@ -1,0 +1,104 @@
+groups:
+  - name: cobre-notification-platform
+    interval: 15s
+    rules:
+      - alert: CobreNotificationPlatformUnavailable
+        expr: up{job="cobre-notification-platform"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: cobre-notification-platform
+        annotations:
+          summary: Notification platform is unavailable
+          description: Prometheus has been unable to scrape the application for 30 seconds.
+
+      - alert: CobreNotificationBacklogStalled
+        expr: max(cobre_notifications_delivery_backlog_oldest_age_seconds) > 120
+        for: 2m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: Notification backlog is not progressing
+          description: The oldest due notification has been waiting for more than two minutes.
+
+      - alert: CobreNotificationPermanentFailureRatioHigh
+        expr: |
+          (
+            sum by (client_id) (
+              increase(cobre_notifications_delivery_attempts_total{client_id!="",result="permanent_failure"}[5m])
+            )
+            /
+            clamp_min(
+              sum by (client_id) (
+                increase(cobre_notifications_delivery_attempts_total{client_id!=""}[5m])
+              ),
+              1
+            )
+          ) > 0.20
+          and on (client_id)
+          sum by (client_id) (
+            increase(cobre_notifications_delivery_attempts_total{client_id!=""}[5m])
+          ) >= 10
+        for: 2m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: Permanent delivery failure ratio is high for client {{ $labels.client_id }}
+          description: More than 20% of at least ten recent delivery attempts for this client failed permanently.
+
+      - alert: CobreNotificationClientFailureRatioHigh
+        expr: |
+          (
+            sum by (client_id) (
+              increase(cobre_notifications_delivery_attempts_total{client_id!="",result!="success"}[5m])
+            )
+            /
+            clamp_min(
+              sum by (client_id) (
+                increase(cobre_notifications_delivery_attempts_total{client_id!=""}[5m])
+              ),
+              1
+            )
+          ) > 0.50
+          and on (client_id)
+          sum by (client_id) (
+            increase(cobre_notifications_delivery_attempts_total{client_id!=""}[5m])
+          ) >= 10
+        for: 2m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: Delivery failure ratio is high for client {{ $labels.client_id }}
+          description: More than half of at least ten recent delivery attempts for this client were unsuccessful.
+
+      - alert: CobreNotificationDeliveryLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (client_id, le) (
+              rate(cobre_notifications_delivery_attempt_duration_seconds_bucket{client_id!=""}[5m])
+            )
+          ) > 2
+          and on (client_id)
+          sum by (client_id) (
+            increase(cobre_notifications_delivery_attempts_total{client_id!=""}[5m])
+          ) >= 10
+        for: 2m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: Webhook delivery latency is high for client {{ $labels.client_id }}
+          description: This client's five-minute p95 delivery latency has remained above two seconds.
+
+      - alert: CobreNotificationLeaseRecoveryRecurring
+        expr: sum(increase(cobre_notifications_worker_events_total{activity="lease_recovered"}[10m])) >= 3
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: Worker leases are being recovered repeatedly
+          description: At least three expired leases were recovered during the last ten minutes.

@@ -15,5 +15,78 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:v3.5.5
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=3d
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      alertmanager:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - source: prometheus-bearer-token
+        target: cobre_metrics_token
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+
+  alertmanager:
+    profiles: ["observability"]
+    image: prom/alertmanager:v0.33.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - source: alertmanager-webhook-token
+        target: cobre_alert_webhook_token
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:12.4.3-security-02
+    depends_on:
+      prometheus:
+        condition: service_started
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    secrets:
+      - source: grafana-admin-password
+        target: grafana_admin_password
+    volumes:
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
 volumes:
   postgres-data:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+
+secrets:
+  prometheus-bearer-token:
+    file: ${PROMETHEUS_BEARER_TOKEN_FILE:-.docker/secrets/prometheus-bearer-token}
+  grafana-admin-password:
+    file: ${GRAFANA_ADMIN_PASSWORD_FILE:-.docker/secrets/grafana-admin-password}
+  alertmanager-webhook-token:
+    file: ${ALERTMANAGER_WEBHOOK_TOKEN_FILE:-.docker/secrets/alertmanager-webhook-token}

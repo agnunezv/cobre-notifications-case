@@ -165,9 +165,24 @@ delivery.
 Actuator exposes Prometheus counters and timers for webhook results, failure
 categories, attempt latency, batch duration, claims, completions, processing
 failures, and recovered leases. PostgreSQL-backed gauges report the number of
-events currently due and the age of the oldest due event. Metric labels use
-only bounded platform enums and categories; client identifiers, event
-identifiers, worker identifiers, payloads, and destination URLs are excluded.
+events currently due and the age of the oldest due event. Delivery-attempt
+metrics include `client_id` and `event_type` so operators can identify an
+affected configured client, plus bounded result, failure-category, and HTTP
+status-class labels. Event identifiers, raw HTTP statuses, worker identifiers,
+payloads, and destination URLs remain excluded to control cardinality and
+avoid leaking per-event data.
+
+Every worker poll is also recorded, including an empty successful poll. An
+enabled gauge and the last successful and failed poll times distinguish a
+deliberately disabled worker from one that is running but no longer making
+progress.
+
+The client and event-type dimensions are appropriate while subscriptions and
+clients remain a bounded configured set. Dynamic client onboarding must be
+accompanied by a cardinality budget; if that budget is exceeded, these labels
+must be allowlisted, aggregated, or moved to an operational analytics store.
+An `event_id` must never become a Prometheus label. Event-level diagnosis uses
+the monitoring-only investigation endpoint and the persisted attempt history.
 
 Backlog gauges describe shared database state, so every application replica
 reports the same value. Dashboards should aggregate these gauges with `max`
@@ -175,10 +190,44 @@ rather than `sum`. Each scrape executes two small indexed PostgreSQL queries;
 this can move to a cached or dedicated exporter if measured scrape load becomes
 material.
 
-Micrometer instruments the application process, while Prometheus and Grafana
-must run outside it. Prometheus scrapes and stores the metrics, and Grafana
-queries Prometheus for dashboards. This separation preserves historical data
-and lets the monitoring platform detect application unavailability through the
-Prometheus `up` metric. A future local Docker Compose setup may share one host
-for demonstration purposes; production monitoring requires an independent
-failure domain and, where justified, high availability.
+Micrometer instruments the application process, while Prometheus, Alertmanager,
+and Grafana run outside it. Prometheus scrapes and stores metrics and evaluates
+rules, Alertmanager groups and routes alert state changes, and Grafana queries
+Prometheus for dashboards. This separation preserves historical data and lets
+the monitoring platform detect application unavailability through the
+Prometheus `up` metric.
+
+The optional local Docker Compose profile provisions Prometheus and two focused
+Grafana dashboards:
+
+| View | Operational question |
+| --- | --- |
+| Notification delivery operations | Which client, event type, failure cause, or HTTP outcome is deviating? |
+| Platform runtime health | Is the API, worker, database pool, JVM, Prometheus, Alertmanager, or Grafana unavailable or approaching saturation? |
+
+The runtime view includes current and peak API throughput, p95 latency, 5xx
+ratio, concurrent requests, Tomcat threads, PostgreSQL pool usage, worker poll
+health and throughput, CPU, heap, JVM threads, GC pauses, and scrape health.
+These signals support a capacity decision only when read together: throughput
+alone does not justify scaling if latency and saturation remain healthy.
+
+Prometheus rules cover availability, backlog age, per-client failure ratios,
+per-client latency, worker polling, database-pool saturation, API 5xx ratio,
+heap pressure, Grafana and Alertmanager availability, and recurring lease
+recovery. The local read-only monitoring token is also used for metric scraping;
+it, the webhook token, and the Grafana administrator password remain outside
+version control. The local profile routes firing and resolved alerts through
+Alertmanager to an authenticated demo receiver. It deliberately does not
+pretend to be a production on-call channel.
+
+The profile assumes the application runs on the host at port `8080` and is
+started with `docker compose --profile observability up -d`. Prometheus is
+available on local port `9090`, Alertmanager on `9093`, and the provisioned
+Grafana dashboard on `3000`; all three ports bind only to the loopback
+interface.
+
+The local stack shares one Docker host for demonstration purposes. Production
+monitoring requires an independent failure domain, a dedicated monitoring
+identity and private management access, durable storage, notification routing,
+and, where justified, high availability. Alert thresholds must also be tuned
+from measured service-level objectives rather than copied from the local demo.

@@ -1,0 +1,84 @@
+groups:
+  - name: cobre-notification-platform-capacity
+    interval: 15s
+    rules:
+      - alert: CobreNotificationWorkerPollingStalled
+        expr: |
+          cobre_notifications_worker_enabled == 1
+          and on (instance)
+          time() - cobre_notifications_worker_last_success_seconds > 30
+        for: 30s
+        labels:
+          severity: critical
+          service: cobre-notification-platform
+        annotations:
+          summary: Notification worker polling has stalled
+          description: Polling is enabled, but no successful worker poll has been observed for more than 30 seconds.
+
+      - alert: CobreNotificationDatabasePoolSaturated
+        expr: |
+          hikaricp_connections_pending > 0
+          and on (instance, pool)
+          hikaricp_connections_active
+          /
+          clamp_min(hikaricp_connections_max, 1) > 0.90
+        for: 2m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: Database connection pool is saturated
+          description: More than 90% of the pool is active and requests have been waiting for a connection for two minutes.
+
+      - alert: CobreNotificationApiServerErrorRatioHigh
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{uri!~"/actuator.*",status=~"5.."}[5m]))
+            /
+            clamp_min(
+              sum(rate(http_server_requests_seconds_count{uri!~"/actuator.*"}[5m])),
+              0.001
+            )
+          ) > 0.05
+          and
+          sum(increase(http_server_requests_seconds_count{uri!~"/actuator.*"}[5m])) >= 20
+        for: 2m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: API server error ratio is high
+          description: More than 5% of at least twenty recent API requests returned a 5xx response.
+
+      - alert: CobreNotificationJvmHeapPressureHigh
+        expr: |
+          sum by (instance) (jvm_memory_used_bytes{area="heap"})
+          /
+          clamp_min(sum by (instance) (jvm_memory_max_bytes{area="heap"}), 1) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: cobre-notification-platform
+        annotations:
+          summary: JVM heap pressure is high
+          description: Heap utilization has remained above 85% for five minutes.
+
+      - alert: CobreNotificationGrafanaUnavailable
+        expr: up{job="grafana"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: Grafana is unavailable
+          description: Prometheus has been unable to scrape Grafana for 30 seconds.
+
+      - alert: CobreNotificationAlertmanagerUnavailable
+        expr: up{job="alertmanager"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: Alertmanager is unavailable
+          description: Prometheus has been unable to reach the alert router for 30 seconds; alert rules may still evaluate, but notifications cannot be delivered.

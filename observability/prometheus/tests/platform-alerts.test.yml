@@ -1,0 +1,134 @@
+rule_files:
+  - ../rules/platform-alerts.yml
+
+evaluation_interval: 15s
+
+tests:
+  - name: enabled worker without a recent successful poll is critical
+    interval: 15s
+    input_series:
+      - series: 'cobre_notifications_worker_enabled{application="cobre-notification-platform",instance="app:8080"}'
+        values: '1+0x8'
+      - series: 'cobre_notifications_worker_last_success_seconds{application="cobre-notification-platform",instance="app:8080"}'
+        values: '0+0x8'
+    alert_rule_test:
+      - eval_time: 1m15s
+        alertname: CobreNotificationWorkerPollingStalled
+        exp_alerts:
+          - exp_labels:
+              application: cobre-notification-platform
+              instance: app:8080
+              service: cobre-notification-platform
+              severity: critical
+            exp_annotations:
+              summary: Notification worker polling has stalled
+              description: Polling is enabled, but no successful worker poll has been observed for more than 30 seconds.
+
+  - name: disabled worker does not create a false stalled alert
+    interval: 15s
+    input_series:
+      - series: 'cobre_notifications_worker_enabled{application="cobre-notification-platform",instance="app:8080"}'
+        values: '0+0x8'
+      - series: 'cobre_notifications_worker_last_success_seconds{application="cobre-notification-platform",instance="app:8080"}'
+        values: '0+0x8'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CobreNotificationWorkerPollingStalled
+        exp_alerts: []
+
+  - name: saturated database pool requires both utilization and waiting requests
+    interval: 1m
+    input_series:
+      - series: 'hikaricp_connections_active{instance="app:8080",pool="HikariPool-1"}'
+        values: '10+0x5'
+      - series: 'hikaricp_connections_max{instance="app:8080",pool="HikariPool-1"}'
+        values: '10+0x5'
+      - series: 'hikaricp_connections_pending{instance="app:8080",pool="HikariPool-1"}'
+        values: '2+0x5'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: CobreNotificationDatabasePoolSaturated
+        exp_alerts:
+          - exp_labels:
+              instance: app:8080
+              pool: HikariPool-1
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: Database connection pool is saturated
+              description: More than 90% of the pool is active and requests have been waiting for a connection for two minutes.
+
+  - name: api server error ratio uses minimum volume
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{uri="/notification_events",status="500"}'
+        values: '0 5 10 15 20 25 30 35'
+      - series: 'http_server_requests_seconds_count{uri="/notification_events",status="200"}'
+        values: '0 15 30 45 60 75 90 105'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: CobreNotificationApiServerErrorRatioHigh
+        exp_alerts:
+          - exp_labels:
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: API server error ratio is high
+              description: More than 5% of at least twenty recent API requests returned a 5xx response.
+
+  - name: sustained heap pressure is visible
+    interval: 1m
+    input_series:
+      - series: 'jvm_memory_used_bytes{area="heap",id="G1 Old Gen",instance="app:8080"}'
+        values: '900+0x7'
+      - series: 'jvm_memory_max_bytes{area="heap",id="G1 Old Gen",instance="app:8080"}'
+        values: '1000+0x7'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: CobreNotificationJvmHeapPressureHigh
+        exp_alerts:
+          - exp_labels:
+              instance: app:8080
+              service: cobre-notification-platform
+              severity: warning
+            exp_annotations:
+              summary: JVM heap pressure is high
+              description: Heap utilization has remained above 85% for five minutes.
+
+  - name: grafana unavailability is reported by prometheus
+    interval: 15s
+    input_series:
+      - series: 'up{job="grafana",instance="grafana:3000",environment="local",service="grafana"}'
+        values: '0+0x4'
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: CobreNotificationGrafanaUnavailable
+        exp_alerts:
+          - exp_labels:
+              environment: local
+              instance: grafana:3000
+              job: grafana
+              service: monitoring
+              severity: warning
+            exp_annotations:
+              summary: Grafana is unavailable
+              description: Prometheus has been unable to scrape Grafana for 30 seconds.
+
+  - name: alertmanager unavailability exposes notification routing loss
+    interval: 15s
+    input_series:
+      - series: 'up{job="alertmanager",instance="alertmanager:9093",environment="local",service="alertmanager"}'
+        values: '0+0x4'
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: CobreNotificationAlertmanagerUnavailable
+        exp_alerts:
+          - exp_labels:
+              environment: local
+              instance: alertmanager:9093
+              job: alertmanager
+              service: monitoring
+              severity: warning
+            exp_annotations:
+              summary: Alertmanager is unavailable
+              description: Prometheus has been unable to reach the alert router for 30 seconds; alert rules may still evaluate, but notifications cannot be delivered.
