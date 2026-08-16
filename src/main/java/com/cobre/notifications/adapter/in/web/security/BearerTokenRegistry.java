@@ -3,8 +3,6 @@ package com.cobre.notifications.adapter.in.web.security;
 import com.cobre.notifications.config.NotificationSecurityProperties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.validation.annotation.Validated;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HashSet;
@@ -12,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.springframework.validation.annotation.Validated;
 
 @Validated
 public class BearerTokenRegistry {
@@ -54,9 +53,7 @@ public class BearerTokenRegistry {
                 .findFirst();
     }
 
-    private ConfiguredToken monitoringToken(
-            NotificationSecurityProperties properties,
-            Set<String> uniqueTokens) {
+    private ConfiguredToken monitoringToken(NotificationSecurityProperties properties, Set<String> uniqueTokens) {
         String token = properties.monitoring().token();
         if (token == null || token.isBlank()) {
             return null;
@@ -77,10 +74,7 @@ public class BearerTokenRegistry {
     }
 
     public record ResolvedPrincipal(
-            @NotBlank String subject,
-            @NotBlank String authority) {
-    }
+            @NotBlank String subject, @NotBlank String authority) {}
 
-    private record ConfiguredToken(ResolvedPrincipal principal, byte[] token) {
-    }
+    private record ConfiguredToken(ResolvedPrincipal principal, byte[] token) {}
 }

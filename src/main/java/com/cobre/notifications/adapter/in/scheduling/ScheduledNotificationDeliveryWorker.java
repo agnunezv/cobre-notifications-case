@@ -4,11 +4,10 @@ import com.cobre.notifications.application.model.NotificationDeliveryBatchResult
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import com.cobre.notifications.config.NotificationDeliveryWorkerProperties;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
-
-import java.time.Duration;
 
 public class ScheduledNotificationDeliveryWorker {
 

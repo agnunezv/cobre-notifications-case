@@ -20,8 +20,7 @@ public record RetryPolicy(int maximumAttempts, List<Duration> retryDelays) {
 
         retryDelays = List.copyOf(retryDelays);
         if (retryDelays.size() != maximumAttempts - 1) {
-            throw new IllegalArgumentException(
-                    "retryDelays must contain one delay for every automatic retry");
+            throw new IllegalArgumentException("retryDelays must contain one delay for every automatic retry");
         }
         if (retryDelays.stream().anyMatch(delay -> delay.isZero() || delay.isNegative())) {
             throw new IllegalArgumentException("retryDelays must contain only positive durations");

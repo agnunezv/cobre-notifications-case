@@ -1,12 +1,11 @@
 package com.cobre.notifications.adapter.in.web.security;
 
+import java.util.List;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
-import java.util.List;
 
 public class BearerTokenAuthenticationProvider implements AuthenticationProvider {
 
@@ -19,12 +18,11 @@ public class BearerTokenAuthenticationProvider implements AuthenticationProvider
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String token = authentication.getCredentials() instanceof String credentials ? credentials : null;
-        BearerTokenRegistry.ResolvedPrincipal resolved = tokenRegistry.resolve(token)
-                .orElseThrow(() -> new BadCredentialsException("Invalid bearer token"));
+        BearerTokenRegistry.ResolvedPrincipal resolved =
+                tokenRegistry.resolve(token).orElseThrow(() -> new BadCredentialsException("Invalid bearer token"));
         Object principal = principal(resolved);
         return BearerTokenAuthentication.authenticated(
-                principal,
-                List.of(new SimpleGrantedAuthority(resolved.authority())));
+                principal, List.of(new SimpleGrantedAuthority(resolved.authority())));
     }
 
     @Override

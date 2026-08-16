@@ -4,7 +4,6 @@ import com.cobre.notifications.application.model.NotificationDeliveryAttemptDeta
 import com.cobre.notifications.domain.model.DeliveryAttemptOrigin;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,8 +21,7 @@ public record DeliveryAttemptInvestigationResponse(
         @JsonProperty("latency_ms") Long latencyMs,
         @JsonProperty("correlation_id") String correlationId) {
 
-    public static DeliveryAttemptInvestigationResponse from(
-            NotificationDeliveryAttemptDetails attempt) {
+    public static DeliveryAttemptInvestigationResponse from(NotificationDeliveryAttemptDetails attempt) {
         return new DeliveryAttemptInvestigationResponse(
                 attempt.attemptId(),
                 attempt.deliveryCycle(),

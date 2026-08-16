@@ -5,7 +5,6 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
 import java.time.Instant;
 
 public record NotificationEventDetails(
@@ -16,8 +15,7 @@ public record NotificationEventDetails(
         Instant deliveryDate,
         @NotNull DeliveryStatus deliveryStatus) {
 
-    @AssertTrue(message = "deliveryDate is required when deliveryStatus is final")
-    public boolean isDeliveryDateConsistent() {
+    @AssertTrue(message = "deliveryDate is required when deliveryStatus is final") public boolean isDeliveryDateConsistent() {
         return deliveryStatus == null || !deliveryStatus.isFinal() || deliveryDate != null;
     }
 }

@@ -1,17 +1,15 @@
 package com.cobre.notifications.adapter.out.persistence;
 
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryBacklogRepository;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Timestamp;
-import java.time.Duration;
-import java.time.Instant;
-
 @Repository
-public class PostgresqlNotificationDeliveryBacklogRepository
-        implements NotificationDeliveryBacklogRepository {
+public class PostgresqlNotificationDeliveryBacklogRepository implements NotificationDeliveryBacklogRepository {
 
     private static final String COUNT_DUE_SQL = """
             SELECT count(*)
@@ -39,26 +37,19 @@ public class PostgresqlNotificationDeliveryBacklogRepository
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public PostgresqlNotificationDeliveryBacklogRepository(
-            NamedParameterJdbcTemplate jdbcTemplate) {
+    public PostgresqlNotificationDeliveryBacklogRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public long countDue(Instant observedAt) {
-        Long count = jdbcTemplate.queryForObject(
-                COUNT_DUE_SQL,
-                parameters(observedAt),
-                Long.class);
+        Long count = jdbcTemplate.queryForObject(COUNT_DUE_SQL, parameters(observedAt), Long.class);
         return count == null ? 0L : count;
     }
 
     @Override
     public Duration oldestDueAge(Instant observedAt) {
-        Double ageSeconds = jdbcTemplate.queryForObject(
-                OLDEST_DUE_AGE_SQL,
-                parameters(observedAt),
-                Double.class);
+        Double ageSeconds = jdbcTemplate.queryForObject(OLDEST_DUE_AGE_SQL, parameters(observedAt), Double.class);
         if (ageSeconds == null) {
             return Duration.ZERO;
         }
@@ -66,7 +57,6 @@ public class PostgresqlNotificationDeliveryBacklogRepository
     }
 
     private MapSqlParameterSource parameters(Instant observedAt) {
-        return new MapSqlParameterSource()
-                .addValue("observedAt", Timestamp.from(observedAt));
+        return new MapSqlParameterSource().addValue("observedAt", Timestamp.from(observedAt));
     }
 }

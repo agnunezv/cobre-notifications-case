@@ -1,5 +1,12 @@
 package com.cobre.notifications;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,21 +16,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.UUID;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
-                "notifications.delivery.worker.enabled=false",
-                "notifications.security.clients[0].client-id=CLIENT001",
-                "notifications.security.clients[0].token=client-001-test-token",
-                "notifications.security.monitoring.token=monitoring-test-token"
+            "notifications.delivery.worker.enabled=false",
+            "notifications.security.clients[0].client-id=CLIENT001",
+            "notifications.security.clients[0].token=client-001-test-token",
+            "notifications.security.monitoring.token=monitoring-test-token"
         })
 @AutoConfigureMockMvc
 class NotificationDeliveryMonitoringIntegrationTest extends PostgresqlIntegrationTestSupport {
@@ -42,7 +41,8 @@ class NotificationDeliveryMonitoringIntegrationTest extends PostgresqlIntegratio
     @BeforeEach
     void prepareInvestigationHistory() {
         jdbcTemplate.update("DELETE FROM notification_events");
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO notification_events (
                             event_id,
                             client_id,
@@ -75,16 +75,7 @@ class NotificationDeliveryMonitoringIntegrationTest extends PostgresqlIntegratio
                 "TIMEOUT",
                 "The webhook request timed out",
                 125L);
-        insertAttempt(
-                2,
-                "AUTOMATIC_RETRY",
-                SECOND_ATTEMPT_AT,
-                DELIVERED_AT,
-                "SUCCESS",
-                202,
-                null,
-                null,
-                42L);
+        insertAttempt(2, "AUTOMATIC_RETRY", SECOND_ATTEMPT_AT, DELIVERED_AT, "SUCCESS", 202, null, null, 42L);
     }
 
     @Test
@@ -130,7 +121,8 @@ class NotificationDeliveryMonitoringIntegrationTest extends PostgresqlIntegratio
             String failureCategory,
             String failureDescription,
             long latencyMs) {
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO delivery_attempts (
                             attempt_id,
                             event_id,

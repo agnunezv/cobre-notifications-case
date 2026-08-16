@@ -1,5 +1,8 @@
 package com.cobre.notifications;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliveriesUseCase;
@@ -7,18 +10,6 @@ import com.cobre.notifications.application.port.inbound.ImportNotificationEvents
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.NotificationEvent;
 import jakarta.validation.ConstraintViolationException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
@@ -32,9 +23,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(NotificationDeliveryClaimIntegrationTest.FixedClockConfiguration.class)
@@ -80,12 +79,11 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
         assertThat(claimed)
                 .extracting(ClaimedNotificationDelivery::eventId)
                 .containsExactlyInAnyOrder("PENDING_DUE", "RETRY_DUE");
-        assertThat(claimed)
-                .allSatisfy(delivery -> {
-                    assertThat(delivery.clientId()).isEqualTo("CLIENT001");
-                    assertThat(delivery.deliveryCycle()).isEqualTo(1);
-                    assertThat(delivery.leaseUntil()).isEqualTo(NOW.plus(LEASE_DURATION));
-                });
+        assertThat(claimed).allSatisfy(delivery -> {
+            assertThat(delivery.clientId()).isEqualTo("CLIENT001");
+            assertThat(delivery.deliveryCycle()).isEqualTo(1);
+            assertThat(delivery.leaseUntil()).isEqualTo(NOW.plus(LEASE_DURATION));
+        });
 
         assertClaimedBy("PENDING_DUE", "worker-a");
         assertClaimedBy("RETRY_DUE", "worker-a");
@@ -120,9 +118,7 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
 
         Future<?> lockOwner = executor.submit(() -> transaction.executeWithoutResult(status -> {
             jdbcTemplate.queryForObject(
-                    "SELECT event_id FROM notification_events WHERE event_id = ? FOR UPDATE",
-                    String.class,
-                    "LOCKED");
+                    "SELECT event_id FROM notification_events WHERE event_id = ? FOR UPDATE", String.class, "LOCKED");
             rowLocked.countDown();
             await(releaseLock);
         }));
@@ -130,8 +126,8 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
         try {
             assertThat(rowLocked.await(5, TimeUnit.SECONDS)).isTrue();
 
-            Future<List<ClaimedNotificationDelivery>> otherWorker = executor.submit(
-                    () -> claimUseCase.claimDue(command("worker-b", 1)));
+            Future<List<ClaimedNotificationDelivery>> otherWorker =
+                    executor.submit(() -> claimUseCase.claimDue(command("worker-b", 1)));
 
             assertThat(otherWorker.get(5, TimeUnit.SECONDS))
                     .extracting(ClaimedNotificationDelivery::eventId)
@@ -179,10 +175,7 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
 
     @Test
     void rejectsAnInvalidClaimCommandAtTheApplicationBoundary() {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                " ",
-                0,
-                Duration.ZERO);
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(" ", 0, Duration.ZERO);
 
         assertThatExceptionOfType(ConstraintViolationException.class)
                 .isThrownBy(() -> claimUseCase.claimDue(command))
@@ -203,7 +196,8 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
     }
 
     private void insertEvent(String eventId, String status, Instant nextAttemptAt) {
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO notification_events (
                             event_id,
                             client_id,
@@ -263,9 +257,7 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
 
     private Long claimCount(String workerId) {
         return jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM notification_events WHERE lease_owner = ?",
-                Long.class,
-                workerId);
+                "SELECT count(*) FROM notification_events WHERE lease_owner = ?", Long.class, workerId);
     }
 
     private Set<String> eventIds(List<ClaimedNotificationDelivery> deliveries) {
@@ -295,8 +287,7 @@ class NotificationDeliveryClaimIntegrationTest extends PostgresqlIntegrationTest
             Instant leaseUntil,
             Instant nextAttemptAt,
             long version,
-            Instant updatedAt) {
-    }
+            Instant updatedAt) {}
 
     @TestConfiguration(proxyBeanMethods = false)
     static class FixedClockConfiguration {

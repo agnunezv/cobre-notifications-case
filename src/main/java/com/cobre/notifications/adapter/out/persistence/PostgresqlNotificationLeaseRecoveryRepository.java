@@ -5,23 +5,21 @@ import com.cobre.notifications.application.model.NotificationLeaseRecovery;
 import com.cobre.notifications.application.port.outbound.NotificationLeaseRecoveryRepository;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.DeliveryStatus;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
-import org.springframework.validation.annotation.Validated;
-
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.validation.annotation.Validated;
 
 @Repository
 @Validated
-public class PostgresqlNotificationLeaseRecoveryRepository
-        implements NotificationLeaseRecoveryRepository {
+public class PostgresqlNotificationLeaseRecoveryRepository implements NotificationLeaseRecoveryRepository {
 
     private static final String LOCK_EXPIRED_LEASES_SQL = """
             SELECT notification.event_id,
@@ -74,8 +72,8 @@ public class PostgresqlNotificationLeaseRecoveryRepository
               AND notification.delivery_status = 'PROCESSING'
             """;
 
-    private static final RowMapper<ExpiredNotificationLease> ROW_MAPPER = (resultSet, rowNumber) ->
-            new ExpiredNotificationLease(
+    private static final RowMapper<ExpiredNotificationLease> ROW_MAPPER =
+            (resultSet, rowNumber) -> new ExpiredNotificationLease(
                     resultSet.getString("event_id"),
                     resultSet.getInt("delivery_cycle"),
                     resultSet.getString("lease_owner"),
@@ -86,8 +84,7 @@ public class PostgresqlNotificationLeaseRecoveryRepository
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public PostgresqlNotificationLeaseRecoveryRepository(
-            NamedParameterJdbcTemplate jdbcTemplate) {
+    public PostgresqlNotificationLeaseRecoveryRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -127,13 +124,9 @@ public class PostgresqlNotificationLeaseRecoveryRepository
                 .addValue("nextStatus", recovery.nextStatus().name())
                 .addValue(
                         "nextAttemptAt",
-                        recovery.nextAttemptAt() == null
-                                ? null
-                                : Timestamp.from(recovery.nextAttemptAt()),
+                        recovery.nextAttemptAt() == null ? null : Timestamp.from(recovery.nextAttemptAt()),
                         Types.TIMESTAMP)
-                .addValue(
-                        "leaseRecoveryPending",
-                        recovery.nextStatus() == DeliveryStatus.RETRY_SCHEDULED);
+                .addValue("leaseRecoveryPending", recovery.nextStatus() == DeliveryStatus.RETRY_SCHEDULED);
     }
 
     private long latencyMs(ExpiredNotificationLease expiredLease, Instant recoveredAt) {
@@ -142,7 +135,8 @@ public class PostgresqlNotificationLeaseRecoveryRepository
         }
         return Math.max(
                 0L,
-                Duration.between(expiredLease.openAttemptStartedAt(), recoveredAt).toMillis());
+                Duration.between(expiredLease.openAttemptStartedAt(), recoveredAt)
+                        .toMillis());
     }
 
     private static Instant nullableInstant(Timestamp timestamp) {

@@ -32,7 +32,6 @@ public class NotificationEventQueryService
     @Override
     @Transactional(readOnly = true)
     public NotificationEventDetails get(NotificationEventDetailsQuery query) {
-        return repository.findDetails(query)
-                .orElseThrow(NotificationEventNotFoundException::new);
+        return repository.findDetails(query).orElseThrow(NotificationEventNotFoundException::new);
     }
 }

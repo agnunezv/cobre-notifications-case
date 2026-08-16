@@ -4,13 +4,12 @@ import com.cobre.notifications.application.model.ConfigureNotificationSubscripti
 import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionUseCase;
 import com.cobre.notifications.config.NotificationSubscriptionBootstrapProperties;
 import com.cobre.notifications.domain.model.NotificationSubscription;
+import java.time.Clock;
+import java.util.LinkedHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-
-import java.time.Clock;
-import java.util.LinkedHashSet;
 
 public class NotificationSubscriptionBootstrap implements ApplicationRunner {
 
@@ -34,9 +33,7 @@ public class NotificationSubscriptionBootstrap implements ApplicationRunner {
         var eventTypes = new LinkedHashSet<>(properties.eventTypes());
         configureSubscription.configure(new ConfigureNotificationSubscriptionCommand(
                 new NotificationSubscription(
-                        properties.subscriptionId(),
-                        properties.clientId(),
-                        properties.endpointUrl()),
+                        properties.subscriptionId(), properties.clientId(), properties.endpointUrl()),
                 eventTypes,
                 clock.instant()));
 

@@ -1,19 +1,18 @@
 package com.cobre.notifications.application.model;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.domain.model.NotificationSubscription;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.time.Instant;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 class ConfigureNotificationSubscriptionCommandTest {
 
@@ -33,18 +32,16 @@ class ConfigureNotificationSubscriptionCommandTest {
 
     @Test
     void acceptsAValidSubscriptionConfiguration() {
-        ConfigureNotificationSubscriptionCommand command = command(
-                URI.create("https://hooks.example.com/notifications"),
-                Set.of("credit_transfer"));
+        ConfigureNotificationSubscriptionCommand command =
+                command(URI.create("https://hooks.example.com/notifications"), Set.of("credit_transfer"));
 
         assertThat(validator.validate(command)).isEmpty();
     }
 
     @Test
     void rejectsAnInvalidDestinationAndEmptyEventTypes() {
-        ConfigureNotificationSubscriptionCommand command = command(
-                URI.create("http://hooks.example.com/notifications"),
-                Set.of());
+        ConfigureNotificationSubscriptionCommand command =
+                command(URI.create("http://hooks.example.com/notifications"), Set.of());
 
         assertThat(validator.validate(command))
                 .extracting(ConstraintViolation::getMessage)
@@ -53,9 +50,7 @@ class ConfigureNotificationSubscriptionCommandTest {
                         "must not be empty");
     }
 
-    private ConfigureNotificationSubscriptionCommand command(
-            URI endpointUrl,
-            Set<String> eventTypes) {
+    private ConfigureNotificationSubscriptionCommand command(URI endpointUrl, Set<String> eventTypes) {
         return new ConfigureNotificationSubscriptionCommand(
                 new NotificationSubscription("SUB001", "CLIENT001", endpointUrl),
                 eventTypes,

@@ -1,18 +1,17 @@
 package com.cobre.notifications.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.domain.model.RetryPolicy;
 import com.cobre.notifications.domain.service.DeliveryLifecycle;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 class NotificationDeliveryRetryConfigurationTest {
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withUserConfiguration(NotificationDeliveryRetryConfiguration.class);
+    private final ApplicationContextRunner contextRunner =
+            new ApplicationContextRunner().withUserConfiguration(NotificationDeliveryRetryConfiguration.class);
 
     @Test
     void bindsTheRetryPolicyFromExternalConfiguration() {
@@ -27,8 +26,7 @@ class NotificationDeliveryRetryConfigurationTest {
 
                     RetryPolicy policy = context.getBean(RetryPolicy.class);
                     assertThat(policy.maximumAttempts()).isEqualTo(3);
-                    assertThat(policy.retryDelays())
-                            .containsExactly(Duration.ofMillis(250), Duration.ofSeconds(2));
+                    assertThat(policy.retryDelays()).containsExactly(Duration.ofMillis(250), Duration.ofSeconds(2));
                 });
     }
 }

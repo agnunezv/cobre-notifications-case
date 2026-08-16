@@ -6,6 +6,13 @@ import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryGateway;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.net.http.HttpTimeoutException;
+import java.time.Duration;
+import javax.net.ssl.SSLException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -13,14 +20,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-
-import javax.net.ssl.SSLException;
-import java.net.ConnectException;
-import java.net.NoRouteToHostException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
-import java.net.http.HttpTimeoutException;
-import java.time.Duration;
 
 @Component
 @Validated
@@ -31,8 +30,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
 
     private final RestClient restClient;
 
-    public HttpsNotificationDeliveryAdapter(
-            @Qualifier("notificationDeliveryRestClient") RestClient restClient) {
+    public HttpsNotificationDeliveryAdapter(@Qualifier("notificationDeliveryRestClient") RestClient restClient) {
         this.restClient = restClient;
     }
 
@@ -41,7 +39,8 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
         long startedAt = System.nanoTime();
 
         try {
-            int httpStatus = restClient.post()
+            int httpStatus = restClient
+                    .post()
                     .uri(delivery.destination().endpointUrl())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header(EVENT_ID_HEADER, delivery.eventId())
@@ -70,12 +69,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
                     latencyMs);
         }
         if (httpStatus >= 200 && httpStatus < 300) {
-            return new WebhookDeliveryOutcome(
-                    DeliveryAttemptResult.SUCCESS,
-                    httpStatus,
-                    null,
-                    null,
-                    latencyMs);
+            return new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, httpStatus, null, null, latencyMs);
         }
 
         DeliveryAttemptResult result = isRetryable(httpStatus)
@@ -90,8 +84,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
     }
 
     private WebhookDeliveryOutcome outcomeFrom(ResourceAccessException exception, long latencyMs) {
-        if (hasCause(exception, HttpTimeoutException.class)
-                || hasCause(exception, SocketTimeoutException.class)) {
+        if (hasCause(exception, HttpTimeoutException.class) || hasCause(exception, SocketTimeoutException.class)) {
             return failureOutcome(
                     DeliveryAttemptResult.RETRYABLE_FAILURE,
                     NotificationDeliveryFailureCategory.TIMEOUT,
@@ -127,12 +120,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
             NotificationDeliveryFailureCategory failureCategory,
             String failureDescription,
             long latencyMs) {
-        return new WebhookDeliveryOutcome(
-                result,
-                null,
-                failureCategory,
-                failureDescription,
-                latencyMs);
+        return new WebhookDeliveryOutcome(result, null, failureCategory, failureDescription, latencyMs);
     }
 
     private boolean isRetryable(int httpStatus) {
@@ -161,10 +149,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
             String content) {
 
         private static WebhookNotificationRequest from(PreparedNotificationDelivery delivery) {
-            return new WebhookNotificationRequest(
-                    delivery.eventId(),
-                    delivery.eventType(),
-                    delivery.content());
+            return new WebhookNotificationRequest(delivery.eventId(), delivery.eventType(), delivery.content());
         }
     }
 }

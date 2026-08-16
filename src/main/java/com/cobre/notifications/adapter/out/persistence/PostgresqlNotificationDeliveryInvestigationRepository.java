@@ -7,11 +7,6 @@ import com.cobre.notifications.application.port.outbound.NotificationDeliveryInv
 import com.cobre.notifications.domain.model.DeliveryAttemptOrigin;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.DeliveryStatus;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -19,6 +14,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class PostgresqlNotificationDeliveryInvestigationRepository
@@ -75,43 +74,37 @@ public class PostgresqlNotificationDeliveryInvestigationRepository
                     resultSet.getObject("latency_ms", Long.class),
                     resultSet.getString("correlation_id"));
 
-    private static final RowMapper<EventSnapshot> EVENT_ROW_MAPPER = (resultSet, rowNumber) ->
-            new EventSnapshot(
-                    resultSet.getString("event_id"),
-                    resultSet.getString("client_id"),
-                    resultSet.getString("event_type"),
-                    resultSet.getTimestamp("created_at").toInstant(),
-                    DeliveryStatus.valueOf(resultSet.getString("delivery_status")),
-                    resultSet.getInt("delivery_cycle"),
-                    nullableInstant(resultSet, "next_attempt_at"),
-                    nullableInstant(resultSet, "delivery_date"),
-                    nullableInstant(resultSet, "delivered_at"),
-                    resultSet.getString("subscription_id"),
-                    resultSet.getBoolean("attempt_history_complete"),
-                    resultSet.getTimestamp("updated_at").toInstant());
+    private static final RowMapper<EventSnapshot> EVENT_ROW_MAPPER = (resultSet, rowNumber) -> new EventSnapshot(
+            resultSet.getString("event_id"),
+            resultSet.getString("client_id"),
+            resultSet.getString("event_type"),
+            resultSet.getTimestamp("created_at").toInstant(),
+            DeliveryStatus.valueOf(resultSet.getString("delivery_status")),
+            resultSet.getInt("delivery_cycle"),
+            nullableInstant(resultSet, "next_attempt_at"),
+            nullableInstant(resultSet, "delivery_date"),
+            nullableInstant(resultSet, "delivered_at"),
+            resultSet.getString("subscription_id"),
+            resultSet.getBoolean("attempt_history_complete"),
+            resultSet.getTimestamp("updated_at").toInstant());
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public PostgresqlNotificationDeliveryInvestigationRepository(
-            NamedParameterJdbcTemplate jdbcTemplate) {
+    public PostgresqlNotificationDeliveryInvestigationRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
-    public Optional<NotificationDeliveryInvestigation> find(
-            NotificationDeliveryInvestigationQuery query) {
-        MapSqlParameterSource parameters = new MapSqlParameterSource()
-                .addValue("eventId", query.eventId())
-                .addValue("clientId", query.clientId());
+    public Optional<NotificationDeliveryInvestigation> find(NotificationDeliveryInvestigationQuery query) {
+        MapSqlParameterSource parameters =
+                new MapSqlParameterSource().addValue("eventId", query.eventId()).addValue("clientId", query.clientId());
 
-        return jdbcTemplate.query(FIND_EVENT_SQL, parameters, EVENT_ROW_MAPPER)
-                .stream()
+        return jdbcTemplate.query(FIND_EVENT_SQL, parameters, EVENT_ROW_MAPPER).stream()
                 .findFirst()
                 .map(event -> event.toInvestigation(findAttempts(parameters)));
     }
 
-    private List<NotificationDeliveryAttemptDetails> findAttempts(
-            MapSqlParameterSource parameters) {
+    private List<NotificationDeliveryAttemptDetails> findAttempts(MapSqlParameterSource parameters) {
         return jdbcTemplate.query(FIND_ATTEMPTS_SQL, parameters, ATTEMPT_ROW_MAPPER);
     }
 
@@ -138,8 +131,7 @@ public class PostgresqlNotificationDeliveryInvestigationRepository
             boolean attemptHistoryComplete,
             Instant updatedAt) {
 
-        private NotificationDeliveryInvestigation toInvestigation(
-                List<NotificationDeliveryAttemptDetails> attempts) {
+        private NotificationDeliveryInvestigation toInvestigation(List<NotificationDeliveryAttemptDetails> attempts) {
             return new NotificationDeliveryInvestigation(
                     eventId,
                     clientId,

@@ -1,21 +1,18 @@
 package com.cobre.notifications.domain.model;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import org.junit.jupiter.api.Test;
 
 class RetryPolicyTest {
 
-    private static final List<Duration> RETRY_DELAYS = List.of(
-            Duration.ofSeconds(1),
-            Duration.ofSeconds(5),
-            Duration.ofSeconds(30));
+    private static final List<Duration> RETRY_DELAYS =
+            List.of(Duration.ofSeconds(1), Duration.ofSeconds(5), Duration.ofSeconds(30));
 
     @Test
     void returnsTheConfiguredDelayForEachAutomaticRetry() {

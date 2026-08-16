@@ -7,7 +7,5 @@ import jakarta.validation.constraints.NotNull;
 
 public interface GetNotificationEventDetailsUseCase {
 
-    @NotNull
-    @Valid
-    NotificationEventDetails get(@NotNull @Valid NotificationEventDetailsQuery query);
+    @NotNull @Valid NotificationEventDetails get(@NotNull @Valid NotificationEventDetailsQuery query);
 }

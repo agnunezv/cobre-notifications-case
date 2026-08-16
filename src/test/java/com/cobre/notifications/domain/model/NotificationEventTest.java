@@ -1,19 +1,18 @@
 package com.cobre.notifications.domain.model;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.time.Instant;
+import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.time.Instant;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationEventTest {
 
@@ -56,13 +55,7 @@ class NotificationEventTest {
     @Test
     void requiresACreationDateAndDeliveryStatus() {
         NotificationEvent event = new NotificationEvent(
-                "EVT001",
-                "CLIENT001",
-                "credit_card_payment",
-                "Payment received",
-                null,
-                null,
-                null);
+                "EVT001", "CLIENT001", "credit_card_payment", "Payment received", null, null, null);
 
         assertThat(validator.validate(event))
                 .extracting(violation -> violation.getPropertyPath().toString())
@@ -70,7 +63,9 @@ class NotificationEventTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = DeliveryStatus.class, names = {"COMPLETED", "FAILED"})
+    @EnumSource(
+            value = DeliveryStatus.class,
+            names = {"COMPLETED", "FAILED"})
     void requiresADeliveryDateForFinalStatuses(DeliveryStatus deliveryStatus) {
         NotificationEvent event = eventWithDelivery(null, deliveryStatus);
 

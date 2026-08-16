@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,5 +24,4 @@ public record NotificationDeliveryAttemptDetails(
         @Size(max = 64) String failureCategory,
         @Size(max = 500) String failureDescription,
         @PositiveOrZero Long latencyMs,
-        @NotBlank @Size(max = 128) String correlationId) {
-}
+        @NotBlank @Size(max = 128) String correlationId) {}

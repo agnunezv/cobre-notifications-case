@@ -1,5 +1,8 @@
 package com.cobre.notifications;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import com.cobre.notifications.application.model.PreparedNotificationDelivery;
@@ -10,16 +13,6 @@ import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliv
 import com.cobre.notifications.application.port.inbound.RecoverExpiredNotificationLeasesUseCase;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import jakarta.validation.ConstraintViolationException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -33,9 +26,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
@@ -84,11 +83,8 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
         assertThat(recovered.leaseUntil()).isNull();
         assertThat(recovered.leaseRecoveryPending()).isTrue();
 
-        ClaimedNotificationDelivery claimed = claimUseCase.claimDue(
-                        new ClaimNotificationDeliveriesCommand(
-                                "worker-recovery",
-                                1,
-                                LEASE_DURATION))
+        ClaimedNotificationDelivery claimed = claimUseCase
+                .claimDue(new ClaimNotificationDeliveriesCommand("worker-recovery", 1, LEASE_DURATION))
                 .getFirst();
         assertThat(claimed.eventId()).isEqualTo("CLAIM_ONLY");
         assertThat(claimed.leaseRecovery()).isTrue();
@@ -118,19 +114,12 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
         assertThat(recovered.nextAttemptAt()).isEqualTo(NOW.plusSeconds(5));
         assertThat(recovered.leaseRecoveryPending()).isTrue();
 
-        PreparedNotificationDelivery abandonedDelivery = preparedDelivery(
-                "OPEN_ATTEMPT",
-                attemptId,
-                2,
-                startedAt);
-        WebhookDeliveryOutcome lateSuccess = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.SUCCESS,
-                200,
-                null,
-                null,
-                10_000);
+        PreparedNotificationDelivery abandonedDelivery = preparedDelivery("OPEN_ATTEMPT", attemptId, 2, startedAt);
+        WebhookDeliveryOutcome lateSuccess =
+                new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 200, null, null, 10_000);
 
-        assertThat(completeAttemptUseCase.complete(abandonedDelivery, lateSuccess)).isFalse();
+        assertThat(completeAttemptUseCase.complete(abandonedDelivery, lateSuccess))
+                .isFalse();
         assertThat(persistedDelivery("OPEN_ATTEMPT").status()).isEqualTo("RETRY_SCHEDULED");
     }
 
@@ -141,16 +130,12 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
         insertProcessingEvent("LATE_COMPLETION", NOW.minusSeconds(1));
         insertOpenAttempt("LATE_COMPLETION", attemptId, 1, startedAt, "INITIAL");
 
-        WebhookDeliveryOutcome lateSuccess = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.SUCCESS,
-                200,
-                null,
-                null,
-                10_000);
+        WebhookDeliveryOutcome lateSuccess =
+                new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 200, null, null, 10_000);
 
         assertThat(completeAttemptUseCase.complete(
-                preparedDelivery("LATE_COMPLETION", attemptId, 1, startedAt),
-                lateSuccess)).isFalse();
+                        preparedDelivery("LATE_COMPLETION", attemptId, 1, startedAt), lateSuccess))
+                .isFalse();
         assertThat(persistedDelivery("LATE_COMPLETION").status()).isEqualTo("PROCESSING");
         assertThat(attempt(attemptId).finishedAt()).isNull();
 
@@ -162,12 +147,7 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
     void failsTheDeliveryWhenTheAbandonedAttemptExhaustedTheRetryPolicy() {
         UUID attemptId = UUID.randomUUID();
         insertProcessingEvent("EXHAUSTED", NOW.minusSeconds(1));
-        insertOpenAttempt(
-                "EXHAUSTED",
-                attemptId,
-                4,
-                NOW.minusSeconds(10),
-                "AUTOMATIC_RETRY");
+        insertOpenAttempt("EXHAUSTED", attemptId, 4, NOW.minusSeconds(10), "AUTOMATIC_RETRY");
 
         assertThat(recoveryUseCase.recoverExpired(10)).isEqualTo(1);
 
@@ -209,9 +189,7 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
 
         try {
             start.countDown();
-            assertThat(List.of(
-                    firstWorker.get(10, TimeUnit.SECONDS),
-                    secondWorker.get(10, TimeUnit.SECONDS)))
+            assertThat(List.of(firstWorker.get(10, TimeUnit.SECONDS), secondWorker.get(10, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder(10, 10);
             assertThat(recoveredEventCount()).isEqualTo(20);
             assertThat(totalEventVersions()).isEqualTo(20);
@@ -221,7 +199,8 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
     }
 
     private void insertSubscription() {
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO subscriptions (
                             subscription_id,
                             client_id,
@@ -238,7 +217,8 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
     }
 
     private void insertProcessingEvent(String eventId, Instant leaseUntil) {
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO notification_events (
                             event_id,
                             client_id,
@@ -270,12 +250,9 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
     }
 
     private void insertOpenAttempt(
-            String eventId,
-            UUID attemptId,
-            int attemptNumber,
-            Instant startedAt,
-            String origin) {
-        jdbcTemplate.update("""
+            String eventId, UUID attemptId, int attemptNumber, Instant startedAt, String origin) {
+        jdbcTemplate.update(
+                """
                         INSERT INTO delivery_attempts (
                             attempt_id,
                             event_id,
@@ -285,20 +262,11 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
                             started_at,
                             correlation_id
                         ) VALUES (?, ?, 1, ?, ?, ?, ?)
-                        """,
-                attemptId,
-                eventId,
-                attemptNumber,
-                origin,
-                Timestamp.from(startedAt),
-                attemptId.toString());
+                        """, attemptId, eventId, attemptNumber, origin, Timestamp.from(startedAt), attemptId.toString());
     }
 
     private PreparedNotificationDelivery preparedDelivery(
-            String eventId,
-            UUID attemptId,
-            int attemptNumber,
-            Instant startedAt) {
+            String eventId, UUID attemptId, int attemptNumber, Instant startedAt) {
         return new PreparedNotificationDelivery(
                 attemptId,
                 eventId,
@@ -306,8 +274,7 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
                 "credit_payment",
                 "Test event " + eventId,
                 new com.cobre.notifications.domain.model.NotificationDestination(
-                        SUBSCRIPTION_ID,
-                        URI.create(DESTINATION_URL)),
+                        SUBSCRIPTION_ID, URI.create(DESTINATION_URL)),
                 1,
                 attemptNumber,
                 attemptId.toString(),
@@ -357,21 +324,17 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
     }
 
     private long recoveredEventCount() {
-        Long count = jdbcTemplate.queryForObject(
-                """
+        Long count = jdbcTemplate.queryForObject("""
                 SELECT count(*)
                 FROM notification_events
                 WHERE delivery_status = 'RETRY_SCHEDULED'
                   AND lease_recovery_pending = TRUE
-                """,
-                Long.class);
+                """, Long.class);
         return count == null ? 0L : count;
     }
 
     private long totalEventVersions() {
-        Long versions = jdbcTemplate.queryForObject(
-                "SELECT sum(version) FROM notification_events",
-                Long.class);
+        Long versions = jdbcTemplate.queryForObject("SELECT sum(version) FROM notification_events", Long.class);
         return versions == null ? 0L : versions;
     }
 
@@ -406,14 +369,8 @@ class NotificationLeaseRecoveryIntegrationTest extends PostgresqlIntegrationTest
             String leaseOwner,
             Instant leaseUntil,
             boolean leaseRecoveryPending,
-            long version) {
-    }
+            long version) {}
 
     private record PersistedAttempt(
-            String origin,
-            Instant finishedAt,
-            String result,
-            String failureCategory,
-            Long latencyMs) {
-    }
+            String origin, Instant finishedAt, String result, String failureCategory, Long latencyMs) {}
 }

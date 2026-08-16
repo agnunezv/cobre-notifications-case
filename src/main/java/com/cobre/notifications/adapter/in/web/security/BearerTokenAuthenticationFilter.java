@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Optional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -11,9 +13,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.util.Optional;
 
 public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
@@ -26,13 +25,10 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            extractBearerToken(request)
-                    .ifPresent(this::authenticate);
+            extractBearerToken(request).ifPresent(this::authenticate);
         }
 
         filterChain.doFilter(request, response);
@@ -40,8 +36,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
     private Optional<String> extractBearerToken(HttpServletRequest request) {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (authorization == null
-                || !authorization.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+        if (authorization == null || !authorization.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
             return Optional.empty();
         }
 
@@ -51,8 +46,8 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticate(String token) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    BearerTokenAuthentication.unauthenticated(token));
+            Authentication authentication =
+                    authenticationManager.authenticate(BearerTokenAuthentication.unauthenticated(token));
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);

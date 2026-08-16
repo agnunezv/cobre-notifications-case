@@ -9,13 +9,12 @@ import com.cobre.notifications.application.port.inbound.DeliverPreparedNotificat
 import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliveryUseCase;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
 import com.cobre.notifications.application.port.inbound.RecoverExpiredNotificationLeasesUseCase;
+import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @Validated

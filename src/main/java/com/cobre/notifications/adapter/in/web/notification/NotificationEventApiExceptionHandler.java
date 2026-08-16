@@ -5,30 +5,25 @@ import com.cobre.notifications.application.model.NotificationEventReplayNotAllow
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.util.stream.Collectors;
 
 @RestControllerAdvice(assignableTypes = NotificationEventController.class)
 public class NotificationEventApiExceptionHandler {
 
     @ExceptionHandler(NotificationEventNotFoundException.class)
     ProblemDetail handleNotFound(NotificationEventNotFoundException exception) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.NOT_FOUND,
-                exception.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
         problem.setTitle("Notification event not found");
         return problem;
     }
 
     @ExceptionHandler(NotificationEventReplayNotAllowedException.class)
     ProblemDetail handleReplayNotAllowed(NotificationEventReplayNotAllowedException exception) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT,
-                exception.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
         problem.setTitle("Notification event cannot be replayed");
         return problem;
     }
@@ -39,8 +34,7 @@ public class NotificationEventApiExceptionHandler {
                 .anyMatch(violation -> containsReturnValue(violation.getPropertyPath()));
         if (invalidReturnValue) {
             ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Stored notification data violates the application contract");
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Stored notification data violates the application contract");
             problem.setTitle("Invalid notification data");
             return problem;
         }

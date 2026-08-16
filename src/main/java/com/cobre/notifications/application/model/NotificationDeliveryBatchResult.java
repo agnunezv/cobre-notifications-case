@@ -11,11 +11,8 @@ public record NotificationDeliveryBatchResult(
         @PositiveOrZero int staleCompletionCount,
         @PositiveOrZero int processingFailureCount) {
 
-    @AssertTrue(message = "every claimed delivery must have exactly one batch outcome")
-    public boolean isCountConsistent() {
-        return claimedCount == preparationSkippedCount
-                + completionAppliedCount
-                + staleCompletionCount
-                + processingFailureCount;
+    @AssertTrue(message = "every claimed delivery must have exactly one batch outcome") public boolean isCountConsistent() {
+        return claimedCount
+                == preparationSkippedCount + completionAppliedCount + staleCompletionCount + processingFailureCount;
     }
 }

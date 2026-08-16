@@ -3,12 +3,11 @@ package com.cobre.notifications.config;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.net.URI;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
-
-import java.net.URI;
-import java.util.List;
 
 @Validated
 @ConfigurationProperties(prefix = "notifications.subscription-bootstrap")
@@ -29,19 +28,18 @@ public record NotificationSubscriptionBootstrapProperties(
     public boolean isConfigurationCompleteWhenEnabled() {
         return !enabled
                 || StringUtils.hasText(subscriptionId)
-                && StringUtils.hasText(clientId)
-                && endpointUrl != null
-                && !eventTypes.isEmpty()
-                && eventTypes.stream().allMatch(StringUtils::hasText);
+                        && StringUtils.hasText(clientId)
+                        && endpointUrl != null
+                        && !eventTypes.isEmpty()
+                        && eventTypes.stream().allMatch(StringUtils::hasText);
     }
 
-    @AssertTrue(message = "endpointUrl must be an absolute HTTPS URL without user information or a fragment")
-    public boolean isEndpointUrlValidWhenEnabled() {
+    @AssertTrue(message = "endpointUrl must be an absolute HTTPS URL without user information or a fragment") public boolean isEndpointUrlValidWhenEnabled() {
         return !enabled
                 || endpointUrl == null
                 || "https".equalsIgnoreCase(endpointUrl.getScheme())
-                && endpointUrl.getHost() != null
-                && endpointUrl.getUserInfo() == null
-                && endpointUrl.getFragment() == null;
+                        && endpointUrl.getHost() != null
+                        && endpointUrl.getUserInfo() == null
+                        && endpointUrl.getFragment() == null;
     }
 }

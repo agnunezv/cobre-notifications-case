@@ -1,28 +1,5 @@
 package com.cobre.notifications.adapter.out.webhook;
 
-import com.cobre.notifications.application.model.NotificationDeliveryFailureCategory;
-import com.cobre.notifications.application.model.PreparedNotificationDelivery;
-import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
-import com.cobre.notifications.domain.model.DeliveryAttemptResult;
-import com.cobre.notifications.domain.model.NotificationDestination;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.web.client.RestClient;
-
-import javax.net.ssl.SSLHandshakeException;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.time.Instant;
-import java.util.UUID;
-
 import static com.cobre.notifications.adapter.out.webhook.HttpsNotificationDeliveryAdapter.CORRELATION_ID_HEADER;
 import static com.cobre.notifications.adapter.out.webhook.HttpsNotificationDeliveryAdapter.EVENT_ID_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +10,28 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+
+import com.cobre.notifications.application.model.NotificationDeliveryFailureCategory;
+import com.cobre.notifications.application.model.PreparedNotificationDelivery;
+import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
+import com.cobre.notifications.domain.model.DeliveryAttemptResult;
+import com.cobre.notifications.domain.model.NotificationDestination;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.time.Instant;
+import java.util.UUID;
+import javax.net.ssl.SSLHandshakeException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
 
 class HttpsNotificationDeliveryAdapterTest {
 
@@ -157,8 +156,7 @@ class HttpsNotificationDeliveryAdapterTest {
     }
 
     private void expectStatus(int httpStatus) {
-        server.expect(once(), requestTo(ENDPOINT))
-                .andRespond(withStatus(HttpStatusCode.valueOf(httpStatus)));
+        server.expect(once(), requestTo(ENDPOINT)).andRespond(withStatus(HttpStatusCode.valueOf(httpStatus)));
     }
 
     private HttpsNotificationDeliveryAdapter adapter() {

@@ -3,19 +3,17 @@ package com.cobre.notifications.adapter.out.persistence;
 import com.cobre.notifications.application.model.NotificationDeliveryAttemptCompletion;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryCompletionRepository;
 import com.cobre.notifications.domain.model.DeliveryStatus;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.UUID;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.validation.annotation.Validated;
 
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.UUID;
-
 @Repository
 @Validated
-public class PostgresqlNotificationDeliveryCompletionRepository
-        implements NotificationDeliveryCompletionRepository {
+public class PostgresqlNotificationDeliveryCompletionRepository implements NotificationDeliveryCompletionRepository {
 
     private static final String LOCK_CURRENT_ATTEMPT_SQL = """
             SELECT attempt.attempt_id
@@ -62,8 +60,7 @@ public class PostgresqlNotificationDeliveryCompletionRepository
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public PostgresqlNotificationDeliveryCompletionRepository(
-            NamedParameterJdbcTemplate jdbcTemplate) {
+    public PostgresqlNotificationDeliveryCompletionRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -84,10 +81,11 @@ public class PostgresqlNotificationDeliveryCompletionRepository
     }
 
     private boolean isCurrentAttempt(MapSqlParameterSource parameters) {
-        return !jdbcTemplate.query(
-                LOCK_CURRENT_ATTEMPT_SQL,
-                parameters,
-                (resultSet, rowNumber) -> resultSet.getObject("attempt_id", UUID.class))
+        return !jdbcTemplate
+                .query(
+                        LOCK_CURRENT_ATTEMPT_SQL,
+                        parameters,
+                        (resultSet, rowNumber) -> resultSet.getObject("attempt_id", UUID.class))
                 .isEmpty();
     }
 
@@ -105,16 +103,16 @@ public class PostgresqlNotificationDeliveryCompletionRepository
                 .addValue("httpStatus", outcome.httpStatus(), Types.INTEGER)
                 .addValue(
                         "failureCategory",
-                        outcome.failureCategory() == null ? null : outcome.failureCategory().name(),
+                        outcome.failureCategory() == null
+                                ? null
+                                : outcome.failureCategory().name(),
                         Types.VARCHAR)
                 .addValue("failureDescription", outcome.failureDescription(), Types.VARCHAR)
                 .addValue("latencyMs", outcome.latencyMs())
                 .addValue("nextStatus", completion.nextStatus().name())
                 .addValue(
                         "nextAttemptAt",
-                        completion.nextAttemptAt() == null
-                                ? null
-                                : Timestamp.from(completion.nextAttemptAt()),
+                        completion.nextAttemptAt() == null ? null : Timestamp.from(completion.nextAttemptAt()),
                         Types.TIMESTAMP)
                 .addValue(
                         "deliveredAt",

@@ -7,12 +7,11 @@ import com.cobre.notifications.application.port.inbound.ReplayNotificationEventU
 import com.cobre.notifications.application.port.outbound.NotificationEventReplayRepository;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.service.DeliveryLifecycle;
+import java.time.Clock;
+import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
-
-import java.time.Clock;
-import java.time.Instant;
 
 @Service
 @Validated
@@ -23,9 +22,7 @@ public class NotificationEventReplayService implements ReplayNotificationEventUs
     private final Clock clock;
 
     public NotificationEventReplayService(
-            NotificationEventReplayRepository repository,
-            DeliveryLifecycle deliveryLifecycle,
-            Clock clock) {
+            NotificationEventReplayRepository repository, DeliveryLifecycle deliveryLifecycle, Clock clock) {
         this.repository = repository;
         this.deliveryLifecycle = deliveryLifecycle;
         this.clock = clock;
@@ -34,8 +31,8 @@ public class NotificationEventReplayService implements ReplayNotificationEventUs
     @Override
     @Transactional
     public void replay(ReplayNotificationEventCommand command) {
-        DeliveryStatus currentStatus = repository.lockDeliveryStatus(command)
-                .orElseThrow(NotificationEventNotFoundException::new);
+        DeliveryStatus currentStatus =
+                repository.lockDeliveryStatus(command).orElseThrow(NotificationEventNotFoundException::new);
         DeliveryStatus nextStatus = replayStatus(currentStatus);
         Instant replayedAt = clock.instant();
 

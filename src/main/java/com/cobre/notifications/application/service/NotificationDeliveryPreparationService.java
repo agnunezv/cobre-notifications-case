@@ -13,14 +13,13 @@ import com.cobre.notifications.domain.model.InvalidNotificationSubscriptionExcep
 import com.cobre.notifications.domain.model.NotificationDestination;
 import com.cobre.notifications.domain.model.NotificationSubscription;
 import jakarta.validation.ConstraintViolationException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @Validated
@@ -46,18 +45,12 @@ public class NotificationDeliveryPreparationService implements PrepareNotificati
         UUID attemptId = UUID.randomUUID();
 
         if (claimedDelivery.destination() != null) {
-            return repository.prepare(
-                    claimedDelivery,
-                    claimedDelivery.destination(),
-                    attemptId,
-                    preparedAt);
+            return repository.prepare(claimedDelivery, claimedDelivery.destination(), attemptId, preparedAt);
         }
 
         try {
             Optional<NotificationSubscription> subscription = resolveSubscription.resolve(
-                    new NotificationSubscriptionQuery(
-                            claimedDelivery.clientId(),
-                            claimedDelivery.eventType()));
+                    new NotificationSubscriptionQuery(claimedDelivery.clientId(), claimedDelivery.eventType()));
             if (subscription.isEmpty()) {
                 return reject(
                         claimedDelivery,
@@ -67,24 +60,15 @@ public class NotificationDeliveryPreparationService implements PrepareNotificati
             }
 
             return repository.prepare(
-                    claimedDelivery,
-                    NotificationDestination.from(subscription.orElseThrow()),
-                    attemptId,
-                    preparedAt);
+                    claimedDelivery, NotificationDestination.from(subscription.orElseThrow()), attemptId, preparedAt);
         } catch (AmbiguousNotificationSubscriptionException exception) {
             return reject(
-                    claimedDelivery,
-                    DeliveryPreparationFailureCategory.AMBIGUOUS_SUBSCRIPTION,
-                    attemptId,
-                    preparedAt);
+                    claimedDelivery, DeliveryPreparationFailureCategory.AMBIGUOUS_SUBSCRIPTION, attemptId, preparedAt);
         } catch (ConstraintViolationException
-                 | InvalidNotificationSubscriptionException
-                 | InvalidNotificationDestinationException exception) {
+                | InvalidNotificationSubscriptionException
+                | InvalidNotificationDestinationException exception) {
             return reject(
-                    claimedDelivery,
-                    DeliveryPreparationFailureCategory.INVALID_DESTINATION,
-                    attemptId,
-                    preparedAt);
+                    claimedDelivery, DeliveryPreparationFailureCategory.INVALID_DESTINATION, attemptId, preparedAt);
         }
     }
 
@@ -93,11 +77,7 @@ public class NotificationDeliveryPreparationService implements PrepareNotificati
             DeliveryPreparationFailureCategory failureCategory,
             UUID attemptId,
             Instant failedAt) {
-        repository.failConfigurationIfClaimIsCurrent(
-                claimedDelivery,
-                failureCategory,
-                attemptId,
-                failedAt);
+        repository.failConfigurationIfClaimIsCurrent(claimedDelivery, failureCategory, attemptId, failedAt);
         return Optional.empty();
     }
 }

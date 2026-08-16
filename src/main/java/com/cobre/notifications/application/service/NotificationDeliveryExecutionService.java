@@ -37,9 +37,7 @@ public class NotificationDeliveryExecutionService implements DeliverPreparedNoti
         return completeAttempt.complete(delivery, outcome);
     }
 
-    private void recordAttempt(
-            PreparedNotificationDelivery delivery,
-            WebhookDeliveryOutcome outcome) {
+    private void recordAttempt(PreparedNotificationDelivery delivery, WebhookDeliveryOutcome outcome) {
         try {
             metrics.recordAttempt(delivery, outcome);
         } catch (RuntimeException exception) {

@@ -8,17 +8,15 @@ import com.cobre.notifications.application.port.outbound.NotificationDeliveryCom
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.RetryPolicy;
 import com.cobre.notifications.domain.service.DeliveryLifecycle;
+import java.time.Clock;
+import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import java.time.Clock;
-import java.time.Instant;
-
 @Service
 @Validated
-public class NotificationDeliveryCompletionService
-        implements CompleteNotificationDeliveryAttemptUseCase {
+public class NotificationDeliveryCompletionService implements CompleteNotificationDeliveryAttemptUseCase {
 
     private final NotificationDeliveryCompletionRepository repository;
     private final DeliveryLifecycle deliveryLifecycle;
@@ -38,34 +36,24 @@ public class NotificationDeliveryCompletionService
 
     @Override
     @Transactional
-    public boolean complete(
-            PreparedNotificationDelivery delivery,
-            WebhookDeliveryOutcome outcome) {
+    public boolean complete(PreparedNotificationDelivery delivery, WebhookDeliveryOutcome outcome) {
         Instant finishedAt = clock.instant();
-        DeliveryStatus nextStatus = deliveryLifecycle.finishAttempt(
-                DeliveryStatus.PROCESSING,
-                outcome.result(),
-                delivery.attemptNumber());
+        DeliveryStatus nextStatus =
+                deliveryLifecycle.finishAttempt(DeliveryStatus.PROCESSING, outcome.result(), delivery.attemptNumber());
         Instant nextAttemptAt = nextAttemptAt(delivery.attemptNumber(), nextStatus, finishedAt);
 
-        return repository.completeIfCurrent(new NotificationDeliveryAttemptCompletion(
-                delivery,
-                outcome,
-                nextStatus,
-                nextAttemptAt,
-                finishedAt));
+        return repository.completeIfCurrent(
+                new NotificationDeliveryAttemptCompletion(delivery, outcome, nextStatus, nextAttemptAt, finishedAt));
     }
 
-    private Instant nextAttemptAt(
-            int completedAttempts,
-            DeliveryStatus nextStatus,
-            Instant finishedAt) {
+    private Instant nextAttemptAt(int completedAttempts, DeliveryStatus nextStatus, Instant finishedAt) {
         if (nextStatus != DeliveryStatus.RETRY_SCHEDULED) {
             return null;
         }
 
-        return finishedAt.plus(retryPolicy.retryDelayAfter(completedAttempts)
-                .orElseThrow(() -> new IllegalStateException(
-                        "The retry policy did not provide a delay for a scheduled retry")));
+        return finishedAt.plus(retryPolicy
+                .retryDelayAfter(completedAttempts)
+                .orElseThrow(() ->
+                        new IllegalStateException("The retry policy did not provide a delay for a scheduled retry")));
     }
 }

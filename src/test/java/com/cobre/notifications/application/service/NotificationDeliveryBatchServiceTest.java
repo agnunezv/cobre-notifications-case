@@ -1,5 +1,8 @@
 package com.cobre.notifications.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
@@ -9,8 +12,6 @@ import com.cobre.notifications.application.port.inbound.DeliverPreparedNotificat
 import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliveryUseCase;
 import com.cobre.notifications.application.port.inbound.RecoverExpiredNotificationLeasesUseCase;
 import com.cobre.notifications.domain.model.NotificationDestination;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,9 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.Test;
 
 class NotificationDeliveryBatchServiceTest {
 
@@ -55,11 +54,8 @@ class NotificationDeliveryBatchServiceTest {
             orchestrationOrder.add("recover");
             return 2;
         };
-        NotificationDeliveryBatchService service = new NotificationDeliveryBatchService(
-                recoverUseCase,
-                claimUseCase,
-                prepareUseCase,
-                deliverUseCase);
+        NotificationDeliveryBatchService service =
+                new NotificationDeliveryBatchService(recoverUseCase, claimUseCase, prepareUseCase, deliverUseCase);
 
         NotificationDeliveryBatchResult result = service.process(COMMAND);
 
@@ -73,10 +69,7 @@ class NotificationDeliveryBatchServiceTest {
             throw new IllegalStateException("Claim failed");
         };
         NotificationDeliveryBatchService service = new NotificationDeliveryBatchService(
-                batchSize -> 0,
-                claimUseCase,
-                delivery -> Optional.empty(),
-                delivery -> false);
+                batchSize -> 0, claimUseCase, delivery -> Optional.empty(), delivery -> false);
 
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> service.process(COMMAND))
@@ -93,9 +86,7 @@ class NotificationDeliveryBatchServiceTest {
                 "worker-1",
                 NOW.plusSeconds(30),
                 false,
-                new NotificationDestination(
-                        "SUB001",
-                        URI.create("https://hooks.example.com/notifications")));
+                new NotificationDestination("SUB001", URI.create("https://hooks.example.com/notifications")));
     }
 
     private PreparedNotificationDelivery prepared(ClaimedNotificationDelivery claimed) {

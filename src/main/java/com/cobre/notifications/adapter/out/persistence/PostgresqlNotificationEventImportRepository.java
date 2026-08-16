@@ -3,14 +3,13 @@ package com.cobre.notifications.adapter.out.persistence;
 import com.cobre.notifications.application.port.outbound.NotificationEventImportRepository;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.NotificationEvent;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.List;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class PostgresqlNotificationEventImportRepository implements NotificationEventImportRepository {
@@ -45,11 +44,8 @@ public class PostgresqlNotificationEventImportRepository implements Notification
             return 0;
         }
 
-        int[][] affectedRows = jdbcTemplate.batchUpdate(
-                INSERT_IF_ABSENT_SQL,
-                events,
-                BATCH_SIZE,
-                (statement, event) -> {
+        int[][] affectedRows =
+                jdbcTemplate.batchUpdate(INSERT_IF_ABSENT_SQL, events, BATCH_SIZE, (statement, event) -> {
                     statement.setString(1, event.eventId());
                     statement.setString(2, event.clientId());
                     statement.setString(3, event.eventType());

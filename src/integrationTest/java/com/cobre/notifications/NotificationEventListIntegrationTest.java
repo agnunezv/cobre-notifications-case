@@ -1,5 +1,13 @@
 package com.cobre.notifications;
 
+import static org.hamcrest.Matchers.contains;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.sql.Timestamp;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,21 +20,13 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-
-import static org.hamcrest.Matchers.contains;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@SpringBootTest(properties = {
-        "notifications.security.clients[0].client-id=CLIENT001",
-        "notifications.security.clients[0].token=client-001-integration-token",
-        "notifications.security.clients[1].client-id=CLIENT002",
-        "notifications.security.clients[1].token=client-002-integration-token"
-})
+@SpringBootTest(
+        properties = {
+            "notifications.security.clients[0].client-id=CLIENT001",
+            "notifications.security.clients[0].token=client-001-integration-token",
+            "notifications.security.clients[1].client-id=CLIENT002",
+            "notifications.security.clients[1].token=client-002-integration-token"
+        })
 @AutoConfigureMockMvc
 @Transactional
 @Rollback
@@ -92,8 +92,7 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
 
     @Test
     void requiresAuthenticationToRetrieveEventDetails() throws Exception {
-        mockMvc.perform(get("/notification_events/LIST001"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/notification_events/LIST001")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -103,8 +102,7 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("Invalid request parameters"))
-                .andExpect(jsonPath("$.detail")
-                        .value("notificationEventId must not exceed 64 characters"));
+                .andExpect(jsonPath("$.detail").value("notificationEventId must not exceed 64 characters"));
     }
 
     @Test
@@ -178,8 +176,7 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("Invalid notification data"))
-                .andExpect(jsonPath("$.detail")
-                        .value("Stored notification data violates the application contract"));
+                .andExpect(jsonPath("$.detail").value("Stored notification data violates the application contract"));
     }
 
     private void assertNotFoundForClient(String eventId) throws Exception {
@@ -192,13 +189,10 @@ class NotificationEventListIntegrationTest extends PostgresqlIntegrationTestSupp
     }
 
     private void insertEvent(
-            String eventId,
-            String clientId,
-            String eventType,
-            String createdAt,
-            String deliveryStatus) {
+            String eventId, String clientId, String eventType, String createdAt, String deliveryStatus) {
         Instant timestamp = Instant.parse(createdAt);
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO notification_events (
                             event_id,
                             client_id,

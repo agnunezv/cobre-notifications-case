@@ -1,15 +1,14 @@
 package com.cobre.notifications.adapter.out.observability;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryBacklogRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.jupiter.api.Test;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class NotificationDeliveryBacklogMeterBinderTest {
 
@@ -31,17 +30,16 @@ class NotificationDeliveryBacklogMeterBinderTest {
             }
         };
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        new NotificationDeliveryBacklogMeterBinder(
-                repository,
-                Clock.fixed(NOW, ZoneOffset.UTC))
-                .bindTo(registry);
+        new NotificationDeliveryBacklogMeterBinder(repository, Clock.fixed(NOW, ZoneOffset.UTC)).bindTo(registry);
 
         assertThat(registry.get(NotificationDeliveryBacklogMeterBinder.DUE_BACKLOG)
-                .gauge()
-                .value()).isEqualTo(3);
+                        .gauge()
+                        .value())
+                .isEqualTo(3);
         assertThat(registry.get(NotificationDeliveryBacklogMeterBinder.OLDEST_DUE_AGE)
-                .gauge()
-                .value()).isEqualTo(7.5);
+                        .gauge()
+                        .value())
+                .isEqualTo(7.5);
     }
 
     @Test
@@ -58,16 +56,15 @@ class NotificationDeliveryBacklogMeterBinderTest {
             }
         };
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        new NotificationDeliveryBacklogMeterBinder(
-                repository,
-                Clock.fixed(NOW, ZoneOffset.UTC))
-                .bindTo(registry);
+        new NotificationDeliveryBacklogMeterBinder(repository, Clock.fixed(NOW, ZoneOffset.UTC)).bindTo(registry);
 
         assertThat(registry.get(NotificationDeliveryBacklogMeterBinder.DUE_BACKLOG)
-                .gauge()
-                .value()).isNaN();
+                        .gauge()
+                        .value())
+                .isNaN();
         assertThat(registry.get(NotificationDeliveryBacklogMeterBinder.OLDEST_DUE_AGE)
-                .gauge()
-                .value()).isNaN();
+                        .gauge()
+                        .value())
+                .isNaN();
     }
 }

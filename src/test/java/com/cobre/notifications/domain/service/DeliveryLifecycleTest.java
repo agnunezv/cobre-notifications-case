@@ -1,27 +1,27 @@
 package com.cobre.notifications.domain.service;
 
-import com.cobre.notifications.domain.model.DeliveryAttemptResult;
-import com.cobre.notifications.domain.model.DeliveryStatus;
-import com.cobre.notifications.domain.model.RetryPolicy;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-
-import java.time.Duration;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
+import com.cobre.notifications.domain.model.DeliveryAttemptResult;
+import com.cobre.notifications.domain.model.DeliveryStatus;
+import com.cobre.notifications.domain.model.RetryPolicy;
+import java.time.Duration;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
 class DeliveryLifecycleTest {
 
-    private final DeliveryLifecycle lifecycle = new DeliveryLifecycle(new RetryPolicy(
-            3,
-            List.of(Duration.ofSeconds(1), Duration.ofSeconds(5))));
+    private final DeliveryLifecycle lifecycle =
+            new DeliveryLifecycle(new RetryPolicy(3, List.of(Duration.ofSeconds(1), Duration.ofSeconds(5))));
 
     @ParameterizedTest
-    @EnumSource(value = DeliveryStatus.class, names = {"PENDING", "RETRY_SCHEDULED"})
+    @EnumSource(
+            value = DeliveryStatus.class,
+            names = {"PENDING", "RETRY_SCHEDULED"})
     void claimsReadyDeliveries(DeliveryStatus currentStatus) {
         assertThat(lifecycle.claim(currentStatus)).isEqualTo(DeliveryStatus.PROCESSING);
     }
@@ -39,40 +39,32 @@ class DeliveryLifecycleTest {
 
     @Test
     void completesTheDeliveryAfterASuccessfulAttempt() {
-        DeliveryStatus nextStatus = lifecycle.finishAttempt(
-                DeliveryStatus.PROCESSING,
-                DeliveryAttemptResult.SUCCESS,
-                1);
+        DeliveryStatus nextStatus =
+                lifecycle.finishAttempt(DeliveryStatus.PROCESSING, DeliveryAttemptResult.SUCCESS, 1);
 
         assertThat(nextStatus).isEqualTo(DeliveryStatus.COMPLETED);
     }
 
     @Test
     void schedulesAnotherAttemptAfterARetryableFailure() {
-        DeliveryStatus nextStatus = lifecycle.finishAttempt(
-                DeliveryStatus.PROCESSING,
-                DeliveryAttemptResult.RETRYABLE_FAILURE,
-                2);
+        DeliveryStatus nextStatus =
+                lifecycle.finishAttempt(DeliveryStatus.PROCESSING, DeliveryAttemptResult.RETRYABLE_FAILURE, 2);
 
         assertThat(nextStatus).isEqualTo(DeliveryStatus.RETRY_SCHEDULED);
     }
 
     @Test
     void failsTheDeliveryWhenTheRetryPolicyIsExhausted() {
-        DeliveryStatus nextStatus = lifecycle.finishAttempt(
-                DeliveryStatus.PROCESSING,
-                DeliveryAttemptResult.RETRYABLE_FAILURE,
-                3);
+        DeliveryStatus nextStatus =
+                lifecycle.finishAttempt(DeliveryStatus.PROCESSING, DeliveryAttemptResult.RETRYABLE_FAILURE, 3);
 
         assertThat(nextStatus).isEqualTo(DeliveryStatus.FAILED);
     }
 
     @Test
     void failsTheDeliveryImmediatelyAfterAPermanentFailure() {
-        DeliveryStatus nextStatus = lifecycle.finishAttempt(
-                DeliveryStatus.PROCESSING,
-                DeliveryAttemptResult.PERMANENT_FAILURE,
-                1);
+        DeliveryStatus nextStatus =
+                lifecycle.finishAttempt(DeliveryStatus.PROCESSING, DeliveryAttemptResult.PERMANENT_FAILURE, 1);
 
         assertThat(nextStatus).isEqualTo(DeliveryStatus.FAILED);
     }
@@ -81,10 +73,7 @@ class DeliveryLifecycleTest {
     @EnumSource(value = DeliveryStatus.class, names = "PROCESSING", mode = EnumSource.Mode.EXCLUDE)
     void rejectsAttemptResultsOutsideProcessing(DeliveryStatus currentStatus) {
         assertThatIllegalStateException()
-                .isThrownBy(() -> lifecycle.finishAttempt(
-                        currentStatus,
-                        DeliveryAttemptResult.SUCCESS,
-                        1))
+                .isThrownBy(() -> lifecycle.finishAttempt(currentStatus, DeliveryAttemptResult.SUCCESS, 1))
                 .withMessage("Cannot finish an attempt for delivery in %s status", currentStatus);
     }
 
@@ -104,11 +93,8 @@ class DeliveryLifecycleTest {
     @Test
     void requiresAtLeastOneCompletedAttempt() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> lifecycle.finishAttempt(
-                        DeliveryStatus.PROCESSING,
-                        DeliveryAttemptResult.RETRYABLE_FAILURE,
-                        0))
+                .isThrownBy(() ->
+                        lifecycle.finishAttempt(DeliveryStatus.PROCESSING, DeliveryAttemptResult.RETRYABLE_FAILURE, 0))
                 .withMessage("completedAttempts must be at least 1");
     }
-
 }

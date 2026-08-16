@@ -1,5 +1,7 @@
 package com.cobre.notifications.application.model;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -8,8 +10,6 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class WebhookDeliveryOutcomeTest {
 
@@ -29,24 +29,14 @@ class WebhookDeliveryOutcomeTest {
 
     @Test
     void acceptsAConsistentSuccessfulOutcome() {
-        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.SUCCESS,
-                204,
-                null,
-                null,
-                15);
+        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 204, null, null, 15);
 
         assertThat(validator.validate(outcome)).isEmpty();
     }
 
     @Test
     void rejectsASuccessOutcomeWithANonSuccessfulHttpStatus() {
-        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.SUCCESS,
-                500,
-                null,
-                null,
-                15);
+        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 500, null, null, 15);
 
         assertThat(validator.validate(outcome))
                 .extracting(ConstraintViolation::getMessage)
@@ -55,12 +45,8 @@ class WebhookDeliveryOutcomeTest {
 
     @Test
     void rejectsAFailureWithoutFailureInformation() {
-        WebhookDeliveryOutcome outcome = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.RETRYABLE_FAILURE,
-                null,
-                null,
-                null,
-                15);
+        WebhookDeliveryOutcome outcome =
+                new WebhookDeliveryOutcome(DeliveryAttemptResult.RETRYABLE_FAILURE, null, null, null, 15);
 
         assertThat(validator.validate(outcome))
                 .extracting(ConstraintViolation::getMessage)

@@ -4,11 +4,9 @@ import com.cobre.notifications.application.model.ClaimNotificationDeliveriesComm
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.List;
 
 public interface ClaimNotificationDeliveriesUseCase {
 
-    List<@Valid ClaimedNotificationDelivery> claimDue(
-            @NotNull @Valid ClaimNotificationDeliveriesCommand command);
+    List<@Valid ClaimedNotificationDelivery> claimDue(@NotNull @Valid ClaimNotificationDeliveriesCommand command);
 }

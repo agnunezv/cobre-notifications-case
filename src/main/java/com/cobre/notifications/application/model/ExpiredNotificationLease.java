@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -18,8 +17,7 @@ public record ExpiredNotificationLease(
         @Positive Integer openAttemptNumber,
         Instant openAttemptStartedAt) {
 
-    @AssertTrue(message = "open attempt fields must either all be present or all be absent")
-    public boolean isOpenAttemptConsistent() {
+    @AssertTrue(message = "open attempt fields must either all be present or all be absent") public boolean isOpenAttemptConsistent() {
         int presentFields = (openAttemptId == null ? 0 : 1)
                 + (openAttemptNumber == null ? 0 : 1)
                 + (openAttemptStartedAt == null ? 0 : 1);

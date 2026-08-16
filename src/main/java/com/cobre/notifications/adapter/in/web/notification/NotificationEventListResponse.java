@@ -3,7 +3,6 @@ package com.cobre.notifications.adapter.in.web.notification;
 import com.cobre.notifications.application.model.NotificationEventPage;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -30,6 +29,5 @@ public record NotificationEventListResponse(
             @JsonProperty("event_type") String eventType,
             @JsonProperty("created_at") Instant createdAt,
             @JsonProperty("delivery_date") Instant deliveryDate,
-            @JsonProperty("delivery_status") DeliveryStatus deliveryStatus) {
-    }
+            @JsonProperty("delivery_status") DeliveryStatus deliveryStatus) {}
 }

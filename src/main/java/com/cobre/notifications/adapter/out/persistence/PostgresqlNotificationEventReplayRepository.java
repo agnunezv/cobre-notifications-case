@@ -3,13 +3,12 @@ package com.cobre.notifications.adapter.out.persistence;
 import com.cobre.notifications.application.model.ReplayNotificationEventCommand;
 import com.cobre.notifications.application.port.outbound.NotificationEventReplayRepository;
 import com.cobre.notifications.domain.model.DeliveryStatus;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
-
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class PostgresqlNotificationEventReplayRepository implements NotificationEventReplayRepository {
@@ -49,20 +48,18 @@ public class PostgresqlNotificationEventReplayRepository implements Notification
 
     @Override
     public Optional<DeliveryStatus> lockDeliveryStatus(ReplayNotificationEventCommand command) {
-        return jdbcTemplate.query(
+        return jdbcTemplate
+                .query(
                         LOCK_DELIVERY_STATUS_SQL,
                         parameters(command),
-                        (resultSet, rowNumber) -> DeliveryStatus.valueOf(
-                                resultSet.getString("delivery_status")))
+                        (resultSet, rowNumber) -> DeliveryStatus.valueOf(resultSet.getString("delivery_status")))
                 .stream()
                 .findFirst();
     }
 
     @Override
     public boolean scheduleReplay(
-            ReplayNotificationEventCommand command,
-            DeliveryStatus nextStatus,
-            Instant replayedAt) {
+            ReplayNotificationEventCommand command, DeliveryStatus nextStatus, Instant replayedAt) {
         MapSqlParameterSource parameters = parameters(command)
                 .addValue("nextStatus", nextStatus.name())
                 .addValue("replayedAt", Timestamp.from(replayedAt));

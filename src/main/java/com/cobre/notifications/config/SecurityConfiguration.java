@@ -41,32 +41,32 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             BearerTokenAuthenticationProvider authenticationProvider,
-            BearerTokenAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+            BearerTokenAuthenticationEntryPoint authenticationEntryPoint)
+            throws Exception {
         var authenticationManager = new ProviderManager(authenticationProvider);
-        BearerTokenAuthenticationFilter bearerTokenFilter =
-                new BearerTokenAuthenticationFilter(authenticationManager);
+        BearerTokenAuthenticationFilter bearerTokenFilter = new BearerTokenAuthenticationFilter(authenticationManager);
 
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
+        return http.csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/actuator/health/**").permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ERROR)
+                        .permitAll()
+                        .requestMatchers("/actuator/health/**")
+                        .permitAll()
                         .requestMatchers(
-                                "/actuator/prometheus",
-                                "/actuator/metrics",
-                                "/actuator/metrics/**",
-                                "/actuator/info")
+                                "/actuator/prometheus", "/actuator/metrics", "/actuator/metrics/**", "/actuator/info")
                         .hasRole("MONITORING")
-                        .requestMatchers("/internal/monitoring/**").hasRole("MONITORING")
-                        .requestMatchers("/notification_events/**").hasRole("CLIENT")
-                        .anyRequest().denyAll())
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(authenticationEntryPoint))
+                        .requestMatchers("/internal/monitoring/**")
+                        .hasRole("MONITORING")
+                        .requestMatchers("/notification_events/**")
+                        .hasRole("CLIENT")
+                        .anyRequest()
+                        .denyAll())
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
                 .addFilterBefore(bearerTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

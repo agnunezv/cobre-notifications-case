@@ -1,16 +1,15 @@
 package com.cobre.notifications.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationDeliveryHttpPropertiesTest {
 
@@ -30,18 +29,16 @@ class NotificationDeliveryHttpPropertiesTest {
 
     @Test
     void acceptsPositiveTimeouts() {
-        NotificationDeliveryHttpProperties properties = new NotificationDeliveryHttpProperties(
-                Duration.ofSeconds(2),
-                Duration.ofSeconds(5));
+        NotificationDeliveryHttpProperties properties =
+                new NotificationDeliveryHttpProperties(Duration.ofSeconds(2), Duration.ofSeconds(5));
 
         assertThat(validator.validate(properties)).isEmpty();
     }
 
     @Test
     void rejectsANonPositiveConnectTimeout() {
-        NotificationDeliveryHttpProperties properties = new NotificationDeliveryHttpProperties(
-                Duration.ZERO,
-                Duration.ofSeconds(5));
+        NotificationDeliveryHttpProperties properties =
+                new NotificationDeliveryHttpProperties(Duration.ZERO, Duration.ofSeconds(5));
 
         assertThat(validator.validate(properties))
                 .extracting(ConstraintViolation::getMessage)
@@ -50,9 +47,8 @@ class NotificationDeliveryHttpPropertiesTest {
 
     @Test
     void rejectsANonPositiveResponseTimeout() {
-        NotificationDeliveryHttpProperties properties = new NotificationDeliveryHttpProperties(
-                Duration.ofSeconds(2),
-                Duration.ofSeconds(-1));
+        NotificationDeliveryHttpProperties properties =
+                new NotificationDeliveryHttpProperties(Duration.ofSeconds(2), Duration.ofSeconds(-1));
 
         assertThat(validator.validate(properties))
                 .extracting(ConstraintViolation::getMessage)

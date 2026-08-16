@@ -1,5 +1,8 @@
 package com.cobre.notifications.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import com.cobre.notifications.application.model.NotificationEventNotFoundException;
 import com.cobre.notifications.application.model.NotificationEventReplayNotAllowedException;
 import com.cobre.notifications.application.model.ReplayNotificationEventCommand;
@@ -7,16 +10,12 @@ import com.cobre.notifications.application.port.outbound.NotificationEventReplay
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.RetryPolicy;
 import com.cobre.notifications.domain.service.DeliveryLifecycle;
-import org.junit.jupiter.api.Test;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.Test;
 
 class NotificationEventReplayServiceTest {
 
@@ -68,9 +67,7 @@ class NotificationEventReplayServiceTest {
 
     private NotificationEventReplayService service(NotificationEventReplayRepository repository) {
         return new NotificationEventReplayService(
-                repository,
-                new DeliveryLifecycle(new RetryPolicy(1, List.of())),
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                repository, new DeliveryLifecycle(new RetryPolicy(1, List.of())), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private static final class RecordingRepository implements NotificationEventReplayRepository {
@@ -93,9 +90,7 @@ class NotificationEventReplayServiceTest {
 
         @Override
         public boolean scheduleReplay(
-                ReplayNotificationEventCommand command,
-                DeliveryStatus nextStatus,
-                Instant replayedAt) {
+                ReplayNotificationEventCommand command, DeliveryStatus nextStatus, Instant replayedAt) {
             this.command = command;
             this.nextStatus = nextStatus;
             this.replayedAt = replayedAt;

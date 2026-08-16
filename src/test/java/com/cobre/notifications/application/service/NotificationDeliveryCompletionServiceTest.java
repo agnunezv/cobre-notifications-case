@@ -1,5 +1,7 @@
 package com.cobre.notifications.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.application.model.NotificationDeliveryAttemptCompletion;
 import com.cobre.notifications.application.model.NotificationDeliveryFailureCategory;
 import com.cobre.notifications.application.model.PreparedNotificationDelivery;
@@ -10,8 +12,6 @@ import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.NotificationDestination;
 import com.cobre.notifications.domain.model.RetryPolicy;
 import com.cobre.notifications.domain.service.DeliveryLifecycle;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
@@ -20,18 +20,13 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class NotificationDeliveryCompletionServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-15T12:00:00Z");
-    private static final RetryPolicy RETRY_POLICY = new RetryPolicy(
-            4,
-            List.of(
-                    Duration.ofSeconds(1),
-                    Duration.ofSeconds(5),
-                    Duration.ofSeconds(30)));
+    private static final RetryPolicy RETRY_POLICY =
+            new RetryPolicy(4, List.of(Duration.ofSeconds(1), Duration.ofSeconds(5), Duration.ofSeconds(30)));
 
     @Test
     void schedulesTheConfiguredRetryAfterARetryableFailure() {
@@ -82,24 +77,14 @@ class NotificationDeliveryCompletionServiceTest {
         NotificationDeliveryCompletionService service = service(completion -> false);
 
         boolean completed = service.complete(
-                delivery(1),
-                new WebhookDeliveryOutcome(
-                        DeliveryAttemptResult.SUCCESS,
-                        204,
-                        null,
-                        null,
-                        10));
+                delivery(1), new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 204, null, null, 10));
 
         assertThat(completed).isFalse();
     }
 
-    private NotificationDeliveryCompletionService service(
-            NotificationDeliveryCompletionRepository repository) {
+    private NotificationDeliveryCompletionService service(NotificationDeliveryCompletionRepository repository) {
         return new NotificationDeliveryCompletionService(
-                repository,
-                new DeliveryLifecycle(RETRY_POLICY),
-                RETRY_POLICY,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                repository, new DeliveryLifecycle(RETRY_POLICY), RETRY_POLICY, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private PreparedNotificationDelivery delivery(int attemptNumber) {
@@ -110,9 +95,7 @@ class NotificationDeliveryCompletionServiceTest {
                 "CLIENT001",
                 "credit_payment",
                 "Payment confirmed",
-                new NotificationDestination(
-                        "SUB001",
-                        URI.create("https://hooks.example.com/notifications")),
+                new NotificationDestination("SUB001", URI.create("https://hooks.example.com/notifications")),
                 1,
                 attemptNumber,
                 attemptId.toString(),

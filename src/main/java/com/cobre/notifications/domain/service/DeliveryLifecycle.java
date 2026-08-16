@@ -3,7 +3,6 @@ package com.cobre.notifications.domain.service;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.RetryPolicy;
-
 import java.util.Objects;
 
 public final class DeliveryLifecycle {
@@ -17,8 +16,7 @@ public final class DeliveryLifecycle {
     public DeliveryStatus claim(DeliveryStatus currentStatus) {
         Objects.requireNonNull(currentStatus, "currentStatus must not be null");
 
-        if (currentStatus == DeliveryStatus.PENDING
-                || currentStatus == DeliveryStatus.RETRY_SCHEDULED) {
+        if (currentStatus == DeliveryStatus.PENDING || currentStatus == DeliveryStatus.RETRY_SCHEDULED) {
             return DeliveryStatus.PROCESSING;
         }
 
@@ -26,9 +24,7 @@ public final class DeliveryLifecycle {
     }
 
     public DeliveryStatus finishAttempt(
-            DeliveryStatus currentStatus,
-            DeliveryAttemptResult result,
-            int completedAttempts) {
+            DeliveryStatus currentStatus, DeliveryAttemptResult result, int completedAttempts) {
         Objects.requireNonNull(currentStatus, "currentStatus must not be null");
         Objects.requireNonNull(result, "result must not be null");
 
@@ -42,9 +38,10 @@ public final class DeliveryLifecycle {
         return switch (result) {
             case SUCCESS -> DeliveryStatus.COMPLETED;
             case PERMANENT_FAILURE -> DeliveryStatus.FAILED;
-            case RETRYABLE_FAILURE -> retryPolicy.hasAnotherAttemptAfter(completedAttempts)
-                    ? DeliveryStatus.RETRY_SCHEDULED
-                    : DeliveryStatus.FAILED;
+            case RETRYABLE_FAILURE ->
+                retryPolicy.hasAnotherAttemptAfter(completedAttempts)
+                        ? DeliveryStatus.RETRY_SCHEDULED
+                        : DeliveryStatus.FAILED;
         };
     }
 

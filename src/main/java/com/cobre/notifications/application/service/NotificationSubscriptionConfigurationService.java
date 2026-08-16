@@ -9,13 +9,11 @@ import org.springframework.validation.annotation.Validated;
 
 @Service
 @Validated
-public class NotificationSubscriptionConfigurationService
-        implements ConfigureNotificationSubscriptionUseCase {
+public class NotificationSubscriptionConfigurationService implements ConfigureNotificationSubscriptionUseCase {
 
     private final NotificationSubscriptionConfigurationRepository repository;
 
-    public NotificationSubscriptionConfigurationService(
-            NotificationSubscriptionConfigurationRepository repository) {
+    public NotificationSubscriptionConfigurationService(NotificationSubscriptionConfigurationRepository repository) {
         this.repository = repository;
     }
 

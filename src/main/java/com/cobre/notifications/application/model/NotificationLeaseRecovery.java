@@ -4,7 +4,6 @@ import com.cobre.notifications.domain.model.DeliveryStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
-
 import java.time.Instant;
 
 public record NotificationLeaseRecovery(
@@ -13,15 +12,13 @@ public record NotificationLeaseRecovery(
         Instant nextAttemptAt,
         @NotNull Instant recoveredAt) {
 
-    @AssertTrue(message = "lease recovery must either schedule a retry or fail the delivery")
-    public boolean isNextStatusSupported() {
+    @AssertTrue(message = "lease recovery must either schedule a retry or fail the delivery") public boolean isNextStatusSupported() {
         return nextStatus == null
                 || nextStatus == DeliveryStatus.RETRY_SCHEDULED
                 || nextStatus == DeliveryStatus.FAILED;
     }
 
-    @AssertTrue(message = "nextAttemptAt must be present only for a retry scheduled at or after recovery")
-    public boolean isRetryScheduleConsistent() {
+    @AssertTrue(message = "nextAttemptAt must be present only for a retry scheduled at or after recovery") public boolean isRetryScheduleConsistent() {
         if (nextStatus == null || recoveredAt == null) {
             return true;
         }

@@ -4,14 +4,13 @@ import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryClaimRepository;
 import com.cobre.notifications.domain.model.InvalidNotificationDestinationException;
 import com.cobre.notifications.domain.model.NotificationDestination;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.List;
 
 @Repository
 public class PostgresqlNotificationDeliveryClaimRepository implements NotificationDeliveryClaimRepository {
@@ -48,8 +47,8 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                       notification.destination_url_snapshot
             """;
 
-    private static final RowMapper<ClaimedNotificationDelivery> ROW_MAPPER = (resultSet, rowNumber) ->
-            new ClaimedNotificationDelivery(
+    private static final RowMapper<ClaimedNotificationDelivery> ROW_MAPPER =
+            (resultSet, rowNumber) -> new ClaimedNotificationDelivery(
                     resultSet.getString("event_id"),
                     resultSet.getString("client_id"),
                     resultSet.getString("event_type"),
@@ -59,8 +58,7 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
                     resultSet.getTimestamp("lease_until").toInstant(),
                     resultSet.getBoolean("lease_recovery_pending"),
                     destination(
-                            resultSet.getString("subscription_id"),
-                            resultSet.getString("destination_url_snapshot")));
+                            resultSet.getString("subscription_id"), resultSet.getString("destination_url_snapshot")));
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -70,10 +68,7 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
 
     @Override
     public List<ClaimedNotificationDelivery> claimDue(
-            String workerId,
-            Instant claimedAt,
-            Instant leaseUntil,
-            int batchSize) {
+            String workerId, Instant claimedAt, Instant leaseUntil, int batchSize) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("workerId", workerId)
                 .addValue("claimedAt", Timestamp.from(claimedAt))
@@ -88,8 +83,7 @@ public class PostgresqlNotificationDeliveryClaimRepository implements Notificati
             return null;
         }
         if (subscriptionId == null || endpointUrl == null) {
-            throw new InvalidNotificationDestinationException(
-                    "The stored notification destination is incomplete");
+            throw new InvalidNotificationDestinationException("The stored notification destination is incomplete");
         }
         return NotificationDestination.fromStoredValues(subscriptionId, endpointUrl);
     }

@@ -1,18 +1,17 @@
 package com.cobre.notifications.application.model;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class ClaimNotificationDeliveriesCommandTest {
 
@@ -33,10 +32,8 @@ class ClaimNotificationDeliveriesCommandTest {
     @ParameterizedTest
     @ValueSource(ints = {1, ClaimNotificationDeliveriesCommand.MAX_BATCH_SIZE})
     void acceptsSupportedBatchSizes(int batchSize) {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                "worker-1",
-                batchSize,
-                Duration.ofSeconds(30));
+        ClaimNotificationDeliveriesCommand command =
+                new ClaimNotificationDeliveriesCommand("worker-1", batchSize, Duration.ofSeconds(30));
 
         assertThat(validator.validate(command)).isEmpty();
     }
@@ -44,10 +41,8 @@ class ClaimNotificationDeliveriesCommandTest {
     @ParameterizedTest
     @ValueSource(strings = {"", " "})
     void rejectsBlankWorkerIdentifiers(String workerId) {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                workerId,
-                10,
-                Duration.ofSeconds(30));
+        ClaimNotificationDeliveriesCommand command =
+                new ClaimNotificationDeliveriesCommand(workerId, 10, Duration.ofSeconds(30));
 
         assertThat(validator.validate(command))
                 .extracting(ConstraintViolation::getMessage)
@@ -56,10 +51,8 @@ class ClaimNotificationDeliveriesCommandTest {
 
     @Test
     void rejectsWorkerIdentifiersThatDoNotFitTheDatabaseColumn() {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                "w".repeat(129),
-                10,
-                Duration.ofSeconds(30));
+        ClaimNotificationDeliveriesCommand command =
+                new ClaimNotificationDeliveriesCommand("w".repeat(129), 10, Duration.ofSeconds(30));
 
         assertThat(validator.validate(command))
                 .extracting(ConstraintViolation::getMessage)
@@ -69,10 +62,8 @@ class ClaimNotificationDeliveriesCommandTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 101})
     void rejectsUnsupportedBatchSizes(int batchSize) {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                "worker-1",
-                batchSize,
-                Duration.ofSeconds(30));
+        ClaimNotificationDeliveriesCommand command =
+                new ClaimNotificationDeliveriesCommand("worker-1", batchSize, Duration.ofSeconds(30));
 
         assertThat(validator.validate(command))
                 .extracting(ConstraintViolation::getMessage)
@@ -82,10 +73,8 @@ class ClaimNotificationDeliveriesCommandTest {
     @ParameterizedTest
     @ValueSource(longs = {0, -1})
     void rejectsNonPositiveLeaseDurations(long seconds) {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                "worker-1",
-                10,
-                Duration.ofSeconds(seconds));
+        ClaimNotificationDeliveriesCommand command =
+                new ClaimNotificationDeliveriesCommand("worker-1", 10, Duration.ofSeconds(seconds));
 
         assertThat(validator.validate(command))
                 .extracting(ConstraintViolation::getMessage)
@@ -94,10 +83,7 @@ class ClaimNotificationDeliveriesCommandTest {
 
     @Test
     void requiresALeaseDuration() {
-        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand(
-                "worker-1",
-                10,
-                null);
+        ClaimNotificationDeliveriesCommand command = new ClaimNotificationDeliveriesCommand("worker-1", 10, null);
 
         assertThat(validator.validate(command))
                 .extracting(ConstraintViolation::getMessage)

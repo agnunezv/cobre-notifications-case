@@ -15,10 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class NotificationDeliveryWorkerConfiguration {
 
     @Bean
-    @ConditionalOnProperty(
-            prefix = "notifications.delivery.worker",
-            name = "enabled",
-            havingValue = "true")
+    @ConditionalOnProperty(prefix = "notifications.delivery.worker", name = "enabled", havingValue = "true")
     ScheduledNotificationDeliveryWorker scheduledNotificationDeliveryWorker(
             ProcessNotificationDeliveryBatchUseCase processBatch,
             NotificationDeliveryWorkerProperties properties,

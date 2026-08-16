@@ -11,21 +11,17 @@ import org.springframework.validation.annotation.Validated;
 
 @Service
 @Validated
-public class NotificationDeliveryInvestigationService
-        implements InvestigateNotificationDeliveryUseCase {
+public class NotificationDeliveryInvestigationService implements InvestigateNotificationDeliveryUseCase {
 
     private final NotificationDeliveryInvestigationRepository repository;
 
-    public NotificationDeliveryInvestigationService(
-            NotificationDeliveryInvestigationRepository repository) {
+    public NotificationDeliveryInvestigationService(NotificationDeliveryInvestigationRepository repository) {
         this.repository = repository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public NotificationDeliveryInvestigation investigate(
-            NotificationDeliveryInvestigationQuery query) {
-        return repository.find(query)
-                .orElseThrow(NotificationEventNotFoundException::new);
+    public NotificationDeliveryInvestigation investigate(NotificationDeliveryInvestigationQuery query) {
+        return repository.find(query).orElseThrow(NotificationEventNotFoundException::new);
     }
 }

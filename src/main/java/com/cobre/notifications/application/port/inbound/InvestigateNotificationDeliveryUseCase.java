@@ -7,8 +7,5 @@ import jakarta.validation.constraints.NotNull;
 
 public interface InvestigateNotificationDeliveryUseCase {
 
-    @NotNull
-    @Valid
-    NotificationDeliveryInvestigation investigate(
-            @NotNull @Valid NotificationDeliveryInvestigationQuery query);
+    @NotNull @Valid NotificationDeliveryInvestigation investigate(@NotNull @Valid NotificationDeliveryInvestigationQuery query);
 }

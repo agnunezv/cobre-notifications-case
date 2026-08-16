@@ -7,7 +7,5 @@ import jakarta.validation.constraints.NotNull;
 
 public interface NotificationDeliveryGateway {
 
-    @NotNull
-    @Valid
-    WebhookDeliveryOutcome deliver(@NotNull @Valid PreparedNotificationDelivery delivery);
+    @NotNull @Valid WebhookDeliveryOutcome deliver(@NotNull @Valid PreparedNotificationDelivery delivery);
 }

@@ -1,17 +1,16 @@
 package com.cobre.notifications.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationDeliveryRetryPropertiesTest {
 
@@ -31,11 +30,8 @@ class NotificationDeliveryRetryPropertiesTest {
 
     @Test
     void acceptsOneDelayForEachAutomaticRetry() {
-        NotificationDeliveryRetryProperties properties = properties(
-                4,
-                Duration.ofSeconds(1),
-                Duration.ofSeconds(5),
-                Duration.ofSeconds(30));
+        NotificationDeliveryRetryProperties properties =
+                properties(4, Duration.ofSeconds(1), Duration.ofSeconds(5), Duration.ofSeconds(30));
 
         assertThat(validator.validate(properties)).isEmpty();
     }
@@ -51,9 +47,7 @@ class NotificationDeliveryRetryPropertiesTest {
 
     @Test
     void rejectsMissingRetryDelays() {
-        NotificationDeliveryRetryProperties properties = properties(
-                4,
-                Duration.ofSeconds(1));
+        NotificationDeliveryRetryProperties properties = properties(4, Duration.ofSeconds(1));
 
         assertThat(validator.validate(properties))
                 .extracting(ConstraintViolation::getMessage)

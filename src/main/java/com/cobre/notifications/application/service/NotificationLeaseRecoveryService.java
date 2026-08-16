@@ -8,13 +8,12 @@ import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.cobre.notifications.domain.model.RetryPolicy;
 import com.cobre.notifications.domain.service.DeliveryLifecycle;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @Validated
@@ -49,32 +48,22 @@ public class NotificationLeaseRecoveryService implements RecoverExpiredNotificat
         return expiredLeases.size();
     }
 
-    private NotificationLeaseRecovery recoveryFor(
-            ExpiredNotificationLease expiredLease,
-            Instant recoveredAt) {
+    private NotificationLeaseRecovery recoveryFor(ExpiredNotificationLease expiredLease, Instant recoveredAt) {
         if (!expiredLease.hasOpenAttempt()) {
             return new NotificationLeaseRecovery(
-                    expiredLease,
-                    DeliveryStatus.RETRY_SCHEDULED,
-                    recoveredAt,
-                    recoveredAt);
+                    expiredLease, DeliveryStatus.RETRY_SCHEDULED, recoveredAt, recoveredAt);
         }
 
         int completedAttempts = expiredLease.openAttemptNumber();
         DeliveryStatus nextStatus = deliveryLifecycle.finishAttempt(
-                DeliveryStatus.PROCESSING,
-                DeliveryAttemptResult.RETRYABLE_FAILURE,
-                completedAttempts);
+                DeliveryStatus.PROCESSING, DeliveryAttemptResult.RETRYABLE_FAILURE, completedAttempts);
         Instant nextAttemptAt = nextStatus == DeliveryStatus.RETRY_SCHEDULED
-                ? recoveredAt.plus(retryPolicy.retryDelayAfter(completedAttempts)
+                ? recoveredAt.plus(retryPolicy
+                        .retryDelayAfter(completedAttempts)
                         .orElseThrow(() -> new IllegalStateException(
                                 "The retry policy did not provide a delay for lease recovery")))
                 : null;
 
-        return new NotificationLeaseRecovery(
-                expiredLease,
-                nextStatus,
-                nextAttemptAt,
-                recoveredAt);
+        return new NotificationLeaseRecovery(expiredLease, nextStatus, nextAttemptAt, recoveredAt);
     }
 }

@@ -1,6 +1,13 @@
 package com.cobre.notifications.adapter.in.web.security;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.cobre.notifications.config.SecurityConfiguration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -12,20 +19,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @WebMvcTest(
         controllers = BearerTokenAuthenticationTest.TestController.class,
         properties = {
-                "notifications.security.clients[0].client-id=CLIENT001",
-                "notifications.security.clients[0].token=client-001-test-token",
-                "notifications.security.monitoring.token=monitoring-test-token"
+            "notifications.security.clients[0].client-id=CLIENT001",
+            "notifications.security.clients[0].token=client-001-test-token",
+            "notifications.security.monitoring.token=monitoring-test-token"
         })
 @Import({SecurityConfiguration.class, BearerTokenAuthenticationTest.TestController.class})
 class BearerTokenAuthenticationTest {
@@ -72,22 +71,19 @@ class BearerTokenAuthenticationTest {
 
     @Test
     void rejectsAnInvalidBearerToken() throws Exception {
-        mockMvc.perform(get("/notification_events/test")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token"))
+        mockMvc.perform(get("/notification_events/test").header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
     }
 
     @Test
     void keepsHealthChecksPublic() throws Exception {
-        mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
     }
 
     @Test
     void protectsOtherActuatorEndpoints() throws Exception {
-        mockMvc.perform(get("/actuator/info"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/info")).andExpect(status().isUnauthorized());
     }
 
     @RestController
@@ -104,8 +100,7 @@ class BearerTokenAuthenticationTest {
         }
 
         @GetMapping("/internal/monitoring/test")
-        Map<String, String> authenticatedMonitoringIdentity(
-                @AuthenticationPrincipal MonitoringPrincipal principal) {
+        Map<String, String> authenticatedMonitoringIdentity(@AuthenticationPrincipal MonitoringPrincipal principal) {
             return Map.of("subject", principal.subject());
         }
     }

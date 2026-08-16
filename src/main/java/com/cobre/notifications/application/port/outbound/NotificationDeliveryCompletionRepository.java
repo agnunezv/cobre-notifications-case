@@ -6,6 +6,5 @@ import jakarta.validation.constraints.NotNull;
 
 public interface NotificationDeliveryCompletionRepository {
 
-    boolean completeIfCurrent(
-            @NotNull @Valid NotificationDeliveryAttemptCompletion completion);
+    boolean completeIfCurrent(@NotNull @Valid NotificationDeliveryAttemptCompletion completion);
 }

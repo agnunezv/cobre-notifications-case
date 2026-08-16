@@ -5,14 +5,13 @@ import com.cobre.notifications.application.model.NotificationSubscriptionQuery;
 import com.cobre.notifications.application.port.outbound.NotificationSubscriptionConfigurationRepository;
 import com.cobre.notifications.application.port.outbound.NotificationSubscriptionRepository;
 import com.cobre.notifications.domain.model.NotificationSubscription;
+import java.sql.Timestamp;
+import java.util.List;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
-
-import java.sql.Timestamp;
-import java.util.List;
 
 @Repository
 public class PostgresqlNotificationSubscriptionRepository
@@ -65,8 +64,8 @@ public class PostgresqlNotificationSubscriptionRepository
             VALUES (:subscriptionId, :eventType)
             """;
 
-    private static final RowMapper<NotificationSubscription> ROW_MAPPER = (resultSet, rowNumber) ->
-            NotificationSubscription.fromStoredValues(
+    private static final RowMapper<NotificationSubscription> ROW_MAPPER =
+            (resultSet, rowNumber) -> NotificationSubscription.fromStoredValues(
                     resultSet.getString("subscription_id"),
                     resultSet.getString("client_id"),
                     resultSet.getString("endpoint_url"));
@@ -97,8 +96,7 @@ public class PostgresqlNotificationSubscriptionRepository
 
         if (jdbcTemplate.update(UPSERT_SUBSCRIPTION, parameters) != 1) {
             throw new IllegalStateException(
-                    "Subscription %s is already assigned to another client"
-                            .formatted(subscription.subscriptionId()));
+                    "Subscription %s is already assigned to another client".formatted(subscription.subscriptionId()));
         }
 
         jdbcTemplate.update(DELETE_EVENT_TYPES, parameters);

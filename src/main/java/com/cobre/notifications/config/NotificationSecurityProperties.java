@@ -4,10 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.List;
 
 @Validated
 @ConfigurationProperties(prefix = "notifications.security")
@@ -20,18 +19,12 @@ public record NotificationSecurityProperties(
         monitoring = monitoring == null ? new MonitoringCredential(null) : monitoring;
     }
 
-    public record ClientCredential(
-            @Size(max = 64) String clientId,
-            String token) {
+    public record ClientCredential(@Size(max = 64) String clientId, String token) {
 
-        @AssertTrue(message = "clientId is required when a bearer token is configured")
-        public boolean isClientIdPresentWhenTokenConfigured() {
-            return token == null
-                    || token.isBlank()
-                    || clientId != null && !clientId.isBlank();
+        @AssertTrue(message = "clientId is required when a bearer token is configured") public boolean isClientIdPresentWhenTokenConfigured() {
+            return token == null || token.isBlank() || clientId != null && !clientId.isBlank();
         }
     }
 
-    public record MonitoringCredential(String token) {
-    }
+    public record MonitoringCredential(String token) {}
 }

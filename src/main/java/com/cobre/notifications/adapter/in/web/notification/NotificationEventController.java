@@ -8,6 +8,7 @@ import com.cobre.notifications.application.port.inbound.GetNotificationEventDeta
 import com.cobre.notifications.application.port.inbound.ListNotificationEventsUseCase;
 import com.cobre.notifications.application.port.inbound.ReplayNotificationEventUseCase;
 import com.cobre.notifications.domain.model.DeliveryStatus;
+import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.Instant;
 
 @RestController
 @RequestMapping(path = "/notification_events", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -46,13 +45,8 @@ public class NotificationEventController {
             @RequestParam(name = "delivery_status", required = false) DeliveryStatus deliveryStatus,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        NotificationEventQuery query = new NotificationEventQuery(
-                client.clientId(),
-                createdFrom,
-                createdTo,
-                deliveryStatus,
-                page,
-                size);
+        NotificationEventQuery query =
+                new NotificationEventQuery(client.clientId(), createdFrom, createdTo, deliveryStatus, page, size);
         return NotificationEventListResponse.from(listNotificationEvents.list(query));
     }
 
@@ -60,9 +54,7 @@ public class NotificationEventController {
     public NotificationEventDetailsResponse get(
             @AuthenticationPrincipal ClientPrincipal client,
             @PathVariable("notification_event_id") String notificationEventId) {
-        NotificationEventDetailsQuery query = new NotificationEventDetailsQuery(
-                client.clientId(),
-                notificationEventId);
+        NotificationEventDetailsQuery query = new NotificationEventDetailsQuery(client.clientId(), notificationEventId);
         return NotificationEventDetailsResponse.from(getNotificationEventDetails.get(query));
     }
 
@@ -71,8 +63,6 @@ public class NotificationEventController {
     public void replay(
             @AuthenticationPrincipal ClientPrincipal client,
             @PathVariable("notification_event_id") String notificationEventId) {
-        replayNotificationEvent.replay(new ReplayNotificationEventCommand(
-                client.clientId(),
-                notificationEventId));
+        replayNotificationEvent.replay(new ReplayNotificationEventCommand(client.clientId(), notificationEventId));
     }
 }

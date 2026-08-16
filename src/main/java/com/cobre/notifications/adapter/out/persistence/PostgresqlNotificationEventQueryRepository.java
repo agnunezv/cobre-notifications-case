@@ -7,14 +7,13 @@ import com.cobre.notifications.application.model.NotificationEventQuery;
 import com.cobre.notifications.application.model.NotificationEventSummary;
 import com.cobre.notifications.application.port.outbound.NotificationEventQueryRepository;
 import com.cobre.notifications.domain.model.DeliveryStatus;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class PostgresqlNotificationEventQueryRepository implements NotificationEventQueryRepository {
@@ -95,8 +94,7 @@ public class PostgresqlNotificationEventQueryRepository implements NotificationE
                 .addValue("notificationEventId", query.notificationEventId())
                 .addValue("clientId", query.clientId());
 
-        return jdbcTemplate.query(FIND_DETAILS_QUERY, parameters, DETAILS_ROW_MAPPER)
-                .stream()
+        return jdbcTemplate.query(FIND_DETAILS_QUERY, parameters, DETAILS_ROW_MAPPER).stream()
                 .findFirst();
     }
 }

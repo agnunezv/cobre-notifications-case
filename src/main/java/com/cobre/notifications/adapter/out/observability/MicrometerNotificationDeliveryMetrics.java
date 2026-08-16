@@ -9,13 +9,12 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
 @Validated
@@ -38,9 +37,7 @@ public class MicrometerNotificationDeliveryMetrics implements NotificationDelive
     private final AtomicLong lastFailedPollEpochSeconds = new AtomicLong();
 
     public MicrometerNotificationDeliveryMetrics(
-            MeterRegistry meterRegistry,
-            Clock clock,
-            NotificationDeliveryWorkerProperties workerProperties) {
+            MeterRegistry meterRegistry, Clock clock, NotificationDeliveryWorkerProperties workerProperties) {
         this.meterRegistry = meterRegistry;
         this.clock = clock;
 
@@ -58,13 +55,9 @@ public class MicrometerNotificationDeliveryMetrics implements NotificationDelive
     }
 
     @Override
-    public void recordAttempt(
-            PreparedNotificationDelivery delivery,
-            WebhookDeliveryOutcome outcome) {
+    public void recordAttempt(PreparedNotificationDelivery delivery, WebhookDeliveryOutcome outcome) {
         String result = normalized(outcome.result());
-        String failureCategory = outcome.failureCategory() == null
-                ? NONE
-                : normalized(outcome.failureCategory());
+        String failureCategory = outcome.failureCategory() == null ? NONE : normalized(outcome.failureCategory());
         String httpStatusClass = httpStatusClass(outcome.httpStatus());
 
         Counter.builder(ATTEMPT_COUNT)
@@ -143,8 +136,6 @@ public class MicrometerNotificationDeliveryMetrics implements NotificationDelive
             return NONE;
         }
         int statusClass = httpStatus / 100;
-        return statusClass >= 1 && statusClass <= 5
-                ? statusClass + "xx"
-                : "other";
+        return statusClass >= 1 && statusClass <= 5 ? statusClass + "xx" : "other";
     }
 }

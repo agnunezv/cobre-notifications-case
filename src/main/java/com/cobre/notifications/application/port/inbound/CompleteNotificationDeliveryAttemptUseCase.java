@@ -8,6 +8,5 @@ import jakarta.validation.constraints.NotNull;
 public interface CompleteNotificationDeliveryAttemptUseCase {
 
     boolean complete(
-            @NotNull @Valid PreparedNotificationDelivery delivery,
-            @NotNull @Valid WebhookDeliveryOutcome outcome);
+            @NotNull @Valid PreparedNotificationDelivery delivery, @NotNull @Valid WebhookDeliveryOutcome outcome);
 }

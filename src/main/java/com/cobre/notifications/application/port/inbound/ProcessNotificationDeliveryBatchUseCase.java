@@ -7,8 +7,5 @@ import jakarta.validation.constraints.NotNull;
 
 public interface ProcessNotificationDeliveryBatchUseCase {
 
-    @NotNull
-    @Valid
-    NotificationDeliveryBatchResult process(
-            @NotNull @Valid ClaimNotificationDeliveriesCommand command);
+    @NotNull @Valid NotificationDeliveryBatchResult process(@NotNull @Valid ClaimNotificationDeliveriesCommand command);
 }

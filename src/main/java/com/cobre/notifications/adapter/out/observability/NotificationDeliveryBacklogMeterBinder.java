@@ -4,9 +4,8 @@ import com.cobre.notifications.application.port.outbound.NotificationDeliveryBac
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
-import org.springframework.stereotype.Component;
-
 import java.time.Clock;
+import org.springframework.stereotype.Component;
 
 @Component
 public class NotificationDeliveryBacklogMeterBinder implements MeterBinder {
@@ -17,9 +16,7 @@ public class NotificationDeliveryBacklogMeterBinder implements MeterBinder {
     private final NotificationDeliveryBacklogRepository repository;
     private final Clock clock;
 
-    public NotificationDeliveryBacklogMeterBinder(
-            NotificationDeliveryBacklogRepository repository,
-            Clock clock) {
+    public NotificationDeliveryBacklogMeterBinder(NotificationDeliveryBacklogRepository repository, Clock clock) {
         this.repository = repository;
         this.clock = clock;
     }

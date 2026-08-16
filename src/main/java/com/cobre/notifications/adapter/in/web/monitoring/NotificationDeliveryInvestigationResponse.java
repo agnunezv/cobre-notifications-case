@@ -3,7 +3,6 @@ package com.cobre.notifications.adapter.in.web.monitoring;
 import com.cobre.notifications.application.model.NotificationDeliveryInvestigation;
 import com.cobre.notifications.domain.model.DeliveryStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -22,8 +21,7 @@ public record NotificationDeliveryInvestigationResponse(
         @JsonProperty("updated_at") Instant updatedAt,
         List<DeliveryAttemptInvestigationResponse> attempts) {
 
-    public static NotificationDeliveryInvestigationResponse from(
-            NotificationDeliveryInvestigation investigation) {
+    public static NotificationDeliveryInvestigationResponse from(NotificationDeliveryInvestigation investigation) {
         return new NotificationDeliveryInvestigationResponse(
                 investigation.eventId(),
                 investigation.clientId(),

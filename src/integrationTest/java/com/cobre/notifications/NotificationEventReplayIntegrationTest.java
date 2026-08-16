@@ -1,8 +1,24 @@
 package com.cobre.notifications;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.cobre.notifications.application.model.NotificationEventReplayNotAllowedException;
 import com.cobre.notifications.application.model.ReplayNotificationEventCommand;
 import com.cobre.notifications.application.port.inbound.ReplayNotificationEventUseCase;
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,29 +34,13 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.sql.Timestamp;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@SpringBootTest(properties = {
-        "notifications.security.clients[0].client-id=CLIENT001",
-        "notifications.security.clients[0].token=client-001-integration-token",
-        "notifications.security.clients[1].client-id=CLIENT002",
-        "notifications.security.clients[1].token=client-002-integration-token"
-})
+@SpringBootTest(
+        properties = {
+            "notifications.security.clients[0].client-id=CLIENT001",
+            "notifications.security.clients[0].token=client-001-integration-token",
+            "notifications.security.clients[1].client-id=CLIENT002",
+            "notifications.security.clients[1].token=client-002-integration-token"
+        })
 @AutoConfigureMockMvc
 @Import(NotificationEventReplayIntegrationTest.FixedClockConfiguration.class)
 class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSupport {
@@ -117,8 +117,7 @@ class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSu
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("Notification event cannot be replayed"))
-                .andExpect(jsonPath("$.detail")
-                        .value("Only failed notification events can be replayed"));
+                .andExpect(jsonPath("$.detail").value("Only failed notification events can be replayed"));
 
         assertEventState("REPLAY_COMPLETED", "COMPLETED", 1);
     }
@@ -131,24 +130,18 @@ class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSu
 
     @Test
     void requiresAuthenticationAndAValidEventIdentifier() throws Exception {
-        mockMvc.perform(post("/notification_events/REPLAY_FAILED/replay"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/notification_events/REPLAY_FAILED/replay")).andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post(
-                        "/notification_events/{notification_event_id}/replay",
-                        "E".repeat(65))
+        mockMvc.perform(post("/notification_events/{notification_event_id}/replay", "E".repeat(65))
                         .header(HttpHeaders.AUTHORIZATION, "Bearer client-001-integration-token"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.detail")
-                        .value("notificationEventId must not exceed 64 characters"));
+                .andExpect(jsonPath("$.detail").value("notificationEventId must not exceed 64 characters"));
     }
 
     @Test
     void acceptsOnlyOneOfTwoConcurrentReplayRequests() throws Exception {
-        ReplayNotificationEventCommand command = new ReplayNotificationEventCommand(
-                "CLIENT001",
-                "REPLAY_FAILED");
+        ReplayNotificationEventCommand command = new ReplayNotificationEventCommand("CLIENT001", "REPLAY_FAILED");
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         Future<Boolean> firstReplay = executor.submit(() -> replay(start, command));
@@ -156,9 +149,7 @@ class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSu
 
         try {
             start.countDown();
-            assertThat(List.of(
-                    firstReplay.get(5, TimeUnit.SECONDS),
-                    secondReplay.get(5, TimeUnit.SECONDS)))
+            assertThat(List.of(firstReplay.get(5, TimeUnit.SECONDS), secondReplay.get(5, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder(true, false);
             assertEventState("REPLAY_FAILED", "PENDING", 2);
         } finally {
@@ -166,9 +157,7 @@ class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSu
         }
     }
 
-    private boolean replay(
-            CountDownLatch start,
-            ReplayNotificationEventCommand command) {
+    private boolean replay(CountDownLatch start, ReplayNotificationEventCommand command) {
         await(start);
         try {
             replayUseCase.replay(command);
@@ -193,13 +182,12 @@ class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSu
                 FROM notification_events
                 WHERE event_id = ?
                 """, eventId);
-        assertThat(event)
-                .containsEntry("delivery_status", status)
-                .containsEntry("delivery_cycle", cycle);
+        assertThat(event).containsEntry("delivery_status", status).containsEntry("delivery_cycle", cycle);
     }
 
     private void insertSubscription(String subscriptionId, String clientId) {
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO subscriptions (
                             subscription_id,
                             client_id,
@@ -216,12 +204,9 @@ class NotificationEventReplayIntegrationTest extends PostgresqlIntegrationTestSu
                 Timestamp.from(NOW.minusSeconds(60)));
     }
 
-    private void insertEvent(
-            String eventId,
-            String clientId,
-            String subscriptionId,
-            String deliveryStatus) {
-        jdbcTemplate.update("""
+    private void insertEvent(String eventId, String clientId, String subscriptionId, String deliveryStatus) {
+        jdbcTemplate.update(
+                """
                         INSERT INTO notification_events (
                             event_id,
                             client_id,

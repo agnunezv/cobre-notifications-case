@@ -1,10 +1,9 @@
 package com.cobre.notifications.adapter.in.web.security;
 
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-
 import java.util.Collection;
 import java.util.List;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 
 public final class BearerTokenAuthentication extends AbstractAuthenticationToken {
 
@@ -18,9 +17,7 @@ public final class BearerTokenAuthentication extends AbstractAuthenticationToken
         setAuthenticated(false);
     }
 
-    private BearerTokenAuthentication(
-            Object principal,
-            Collection<? extends GrantedAuthority> authorities) {
+    private BearerTokenAuthentication(Object principal, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
         this.token = null;
@@ -32,8 +29,7 @@ public final class BearerTokenAuthentication extends AbstractAuthenticationToken
     }
 
     public static BearerTokenAuthentication authenticated(
-            Object principal,
-            Collection<? extends GrantedAuthority> authorities) {
+            Object principal, Collection<? extends GrantedAuthority> authorities) {
         return new BearerTokenAuthentication(principal, authorities);
     }
 

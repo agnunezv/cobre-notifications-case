@@ -1,5 +1,8 @@
 package com.cobre.notifications.adapter.in.scheduling;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
 import com.cobre.notifications.application.model.PreparedNotificationDelivery;
@@ -7,24 +10,14 @@ import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryMetrics;
 import com.cobre.notifications.config.NotificationDeliveryWorkerProperties;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import org.junit.jupiter.api.Test;
 
 class ScheduledNotificationDeliveryWorkerTest {
 
-    private static final NotificationDeliveryWorkerProperties PROPERTIES =
-            new NotificationDeliveryWorkerProperties(
-                    true,
-                    "worker-1",
-                    10,
-                    Duration.ofSeconds(1),
-                    Duration.ofSeconds(5),
-                    Duration.ofMinutes(2));
+    private static final NotificationDeliveryWorkerProperties PROPERTIES = new NotificationDeliveryWorkerProperties(
+            true, "worker-1", 10, Duration.ofSeconds(1), Duration.ofSeconds(5), Duration.ofMinutes(2));
 
     @Test
     void delegatesEachScheduledExecutionToTheBatchUseCase() {
@@ -34,10 +27,8 @@ class ScheduledNotificationDeliveryWorkerTest {
             return new NotificationDeliveryBatchResult(0, 2, 0, 2, 0, 0);
         };
         RecordingMetrics metrics = new RecordingMetrics();
-        ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
-                processBatch,
-                PROPERTIES,
-                metrics);
+        ScheduledNotificationDeliveryWorker worker =
+                new ScheduledNotificationDeliveryWorker(processBatch, PROPERTIES, metrics);
 
         worker.processNextBatch();
 
@@ -52,10 +43,8 @@ class ScheduledNotificationDeliveryWorkerTest {
             throw new IllegalStateException("PostgreSQL is unavailable");
         };
         RecordingMetrics metrics = new RecordingMetrics();
-        ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
-                processBatch,
-                PROPERTIES,
-                metrics);
+        ScheduledNotificationDeliveryWorker worker =
+                new ScheduledNotificationDeliveryWorker(processBatch, PROPERTIES, metrics);
 
         assertThatCode(worker::processNextBatch).doesNotThrowAnyException();
         assertThat(metrics.batchFailureDuration).isNotNull().isGreaterThanOrEqualTo(Duration.ZERO);
@@ -63,18 +52,16 @@ class ScheduledNotificationDeliveryWorkerTest {
 
     @Test
     void keepsTheSchedulerAliveWhenBatchMetricsCannotBeRecorded() {
-        ProcessNotificationDeliveryBatchUseCase processBatch = command ->
-                new NotificationDeliveryBatchResult(0, 0, 0, 0, 0, 0);
+        ProcessNotificationDeliveryBatchUseCase processBatch =
+                command -> new NotificationDeliveryBatchResult(0, 0, 0, 0, 0, 0);
         NotificationDeliveryMetrics failingMetrics = new RecordingMetrics() {
             @Override
             public void recordBatch(NotificationDeliveryBatchResult result, Duration duration) {
                 throw new IllegalStateException("Metrics unavailable");
             }
         };
-        ScheduledNotificationDeliveryWorker worker = new ScheduledNotificationDeliveryWorker(
-                processBatch,
-                PROPERTIES,
-                failingMetrics);
+        ScheduledNotificationDeliveryWorker worker =
+                new ScheduledNotificationDeliveryWorker(processBatch, PROPERTIES, failingMetrics);
 
         assertThatCode(worker::processNextBatch).doesNotThrowAnyException();
     }
@@ -86,10 +73,7 @@ class ScheduledNotificationDeliveryWorkerTest {
         private Duration batchFailureDuration;
 
         @Override
-        public void recordAttempt(
-                PreparedNotificationDelivery delivery,
-                WebhookDeliveryOutcome outcome) {
-        }
+        public void recordAttempt(PreparedNotificationDelivery delivery, WebhookDeliveryOutcome outcome) {}
 
         @Override
         public void recordBatch(NotificationDeliveryBatchResult result, Duration duration) {

@@ -1,5 +1,7 @@
 package com.cobre.notifications;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
@@ -12,16 +14,6 @@ import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliv
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryGateway;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -36,8 +28,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(NotificationDeliveryPreparationIntegrationTest.FixedClockConfiguration.class)
@@ -186,14 +185,9 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     void completesASuccessfulAttemptWithoutOverwritingTheSourceDeliveryDate() {
         insertSubscription("SUB001", "https://hooks.example.com/notifications", true);
         insertEvent("DELIVERY_SUCCESS", "PENDING", NOW.minusSeconds(1), null, null);
-        PreparedNotificationDelivery prepared = prepareUseCase.prepare(
-                claim("DELIVERY_SUCCESS")).orElseThrow();
-        WebhookDeliveryOutcome success = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.SUCCESS,
-                204,
-                null,
-                null,
-                18);
+        PreparedNotificationDelivery prepared =
+                prepareUseCase.prepare(claim("DELIVERY_SUCCESS")).orElseThrow();
+        WebhookDeliveryOutcome success = new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 204, null, null, 18);
 
         assertThat(completeAttemptUseCase.complete(prepared, success)).isTrue();
 
@@ -219,10 +213,11 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     void schedulesARetryUsingTheConfiguredDelay() {
         insertSubscription("SUB001", "https://hooks.example.com/notifications", true);
         insertEvent("DELIVERY_RETRY", "PENDING", NOW.minusSeconds(1), null, null);
-        PreparedNotificationDelivery prepared = prepareUseCase.prepare(
-                claim("DELIVERY_RETRY")).orElseThrow();
+        PreparedNotificationDelivery prepared =
+                prepareUseCase.prepare(claim("DELIVERY_RETRY")).orElseThrow();
 
-        assertThat(completeAttemptUseCase.complete(prepared, retryableOutcome())).isTrue();
+        assertThat(completeAttemptUseCase.complete(prepared, retryableOutcome()))
+                .isTrue();
 
         PersistedEvent event = persistedEvent("DELIVERY_RETRY");
         assertThat(event.status()).isEqualTo("RETRY_SCHEDULED");
@@ -237,11 +232,12 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         insertSubscription("SUB001", "https://hooks.example.com/notifications", true);
         insertEvent("DELIVERY_EXHAUSTED", "RETRY_SCHEDULED", NOW.minusSeconds(1), null, null);
         insertFinishedAttempts("DELIVERY_EXHAUSTED", 3);
-        PreparedNotificationDelivery prepared = prepareUseCase.prepare(
-                claim("DELIVERY_EXHAUSTED")).orElseThrow();
+        PreparedNotificationDelivery prepared =
+                prepareUseCase.prepare(claim("DELIVERY_EXHAUSTED")).orElseThrow();
 
         assertThat(prepared.attemptNumber()).isEqualTo(4);
-        assertThat(completeAttemptUseCase.complete(prepared, retryableOutcome())).isTrue();
+        assertThat(completeAttemptUseCase.complete(prepared, retryableOutcome()))
+                .isTrue();
 
         PersistedEvent event = persistedEvent("DELIVERY_EXHAUSTED");
         assertThat(event.status()).isEqualTo("FAILED");
@@ -253,14 +249,9 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     void completesTheSameAttemptOnlyOnceAcrossConcurrentCalls() throws Exception {
         insertSubscription("SUB001", "https://hooks.example.com/notifications", true);
         insertEvent("DUPLICATE_COMPLETION", "PENDING", NOW.minusSeconds(1), null, null);
-        PreparedNotificationDelivery prepared = prepareUseCase.prepare(
-                claim("DUPLICATE_COMPLETION")).orElseThrow();
-        WebhookDeliveryOutcome success = new WebhookDeliveryOutcome(
-                DeliveryAttemptResult.SUCCESS,
-                204,
-                null,
-                null,
-                18);
+        PreparedNotificationDelivery prepared =
+                prepareUseCase.prepare(claim("DUPLICATE_COMPLETION")).orElseThrow();
+        WebhookDeliveryOutcome success = new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 204, null, null, 18);
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         Future<Boolean> first = executor.submit(() -> {
@@ -290,10 +281,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         insertEvent("BATCH_002", "PENDING", NOW.minusSeconds(1), null, null);
 
         NotificationDeliveryBatchResult result = processBatchUseCase.process(
-                new ClaimNotificationDeliveriesCommand(
-                        WORKER_ID,
-                        2,
-                        Duration.ofSeconds(30)));
+                new ClaimNotificationDeliveriesCommand(WORKER_ID, 2, Duration.ofSeconds(30)));
 
         assertThat(result).isEqualTo(new NotificationDeliveryBatchResult(0, 2, 0, 2, 0, 0));
         assertThat(persistedEvent("BATCH_001").status()).isEqualTo("COMPLETED");
@@ -303,10 +291,11 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     }
 
     private ClaimedNotificationDelivery claim(String expectedEventId) {
-        List<ClaimedNotificationDelivery> claimed = claimUseCase.claimDue(
-                new ClaimNotificationDeliveriesCommand(WORKER_ID, 1, Duration.ofSeconds(30)));
+        List<ClaimedNotificationDelivery> claimed =
+                claimUseCase.claimDue(new ClaimNotificationDeliveriesCommand(WORKER_ID, 1, Duration.ofSeconds(30)));
 
-        assertThat(claimed).singleElement()
+        assertThat(claimed)
+                .singleElement()
                 .extracting(ClaimedNotificationDelivery::eventId)
                 .isEqualTo(expectedEventId);
         return claimed.getFirst();
@@ -330,7 +319,8 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     }
 
     private void insertSubscription(String subscriptionId, String endpointUrl, boolean active) {
-        jdbcTemplate.update("""
+        jdbcTemplate.update(
+                """
                         INSERT INTO subscriptions (
                             subscription_id,
                             client_id,
@@ -349,18 +339,13 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         jdbcTemplate.update("""
                         INSERT INTO subscription_event_types (subscription_id, event_type)
                         VALUES (?, ?)
-                        """,
-                subscriptionId,
-                EVENT_TYPE);
+                        """, subscriptionId, EVENT_TYPE);
     }
 
     private void insertEvent(
-            String eventId,
-            String status,
-            Instant nextAttemptAt,
-            String subscriptionId,
-            String destinationUrl) {
-        jdbcTemplate.update("""
+            String eventId, String status, Instant nextAttemptAt, String subscriptionId, String destinationUrl) {
+        jdbcTemplate.update(
+                """
                         INSERT INTO notification_events (
                             event_id,
                             client_id,
@@ -392,7 +377,8 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
 
     private void insertFinishedAttempts(String eventId, int count) {
         for (int attemptNumber = 1; attemptNumber <= count; attemptNumber++) {
-            jdbcTemplate.update("""
+            jdbcTemplate.update(
+                    """
                             INSERT INTO delivery_attempts (
                                 attempt_id,
                                 event_id,
@@ -416,7 +402,8 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     }
 
     private PersistedEvent persistedEvent(String eventId) {
-        return jdbcTemplate.queryForObject("""
+        return jdbcTemplate.queryForObject(
+                """
                         SELECT delivery_status,
                                subscription_id,
                                destination_url_snapshot,
@@ -454,9 +441,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
                                failure_description
                         FROM delivery_attempts
                         WHERE event_id = ?
-                        """,
-                (resultSet, rowNumber) -> attempt(resultSet),
-                eventId);
+                        """, (resultSet, rowNumber) -> attempt(resultSet), eventId);
     }
 
     private PersistedAttempt onlyOpenAttempt(String eventId) {
@@ -472,9 +457,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
                         FROM delivery_attempts
                         WHERE event_id = ?
                           AND finished_at IS NULL
-                        """,
-                (resultSet, rowNumber) -> attempt(resultSet),
-                eventId);
+                        """, (resultSet, rowNumber) -> attempt(resultSet), eventId);
     }
 
     private PersistedAttempt attempt(java.sql.ResultSet resultSet) throws java.sql.SQLException {
@@ -491,9 +474,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
 
     private int attemptCount(String eventId) {
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM delivery_attempts WHERE event_id = ?",
-                Integer.class,
-                eventId);
+                "SELECT count(*) FROM delivery_attempts WHERE event_id = ?", Integer.class, eventId);
         return count == null ? 0 : count;
     }
 
@@ -501,14 +482,12 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         return timestamp == null ? null : timestamp.toInstant();
     }
 
-    private static Integer nullableInteger(java.sql.ResultSet resultSet, String column)
-            throws java.sql.SQLException {
+    private static Integer nullableInteger(java.sql.ResultSet resultSet, String column) throws java.sql.SQLException {
         int value = resultSet.getInt(column);
         return resultSet.wasNull() ? null : value;
     }
 
-    private static Long nullableLong(java.sql.ResultSet resultSet, String column)
-            throws java.sql.SQLException {
+    private static Long nullableLong(java.sql.ResultSet resultSet, String column) throws java.sql.SQLException {
         long value = resultSet.getLong(column);
         return resultSet.wasNull() ? null : value;
     }
@@ -542,8 +521,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
             Instant nextAttemptAt,
             String leaseOwner,
             Instant leaseUntil,
-            boolean attemptHistoryComplete) {
-    }
+            boolean attemptHistoryComplete) {}
 
     private record PersistedAttempt(
             int attemptNumber,
@@ -553,8 +531,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
             Instant finishedAt,
             Long latencyMs,
             String failureCategory,
-            String failureDescription) {
-    }
+            String failureDescription) {}
 
     @TestConfiguration(proxyBeanMethods = false)
     static class FixedClockConfiguration {
@@ -568,12 +545,7 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         @Bean
         @Primary
         NotificationDeliveryGateway successfulDeliveryGateway() {
-            return delivery -> new WebhookDeliveryOutcome(
-                    DeliveryAttemptResult.SUCCESS,
-                    204,
-                    null,
-                    null,
-                    18);
+            return delivery -> new WebhookDeliveryOutcome(DeliveryAttemptResult.SUCCESS, 204, null, null, 18);
         }
     }
 }

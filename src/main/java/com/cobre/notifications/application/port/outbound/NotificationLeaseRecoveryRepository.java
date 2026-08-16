@@ -4,7 +4,6 @@ import com.cobre.notifications.application.model.ExpiredNotificationLease;
 import com.cobre.notifications.application.model.NotificationLeaseRecovery;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-
 import java.time.Instant;
 import java.util.List;
 

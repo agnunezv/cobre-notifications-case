@@ -1,13 +1,13 @@
 package com.cobre.notifications.application.model;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationSubscriptionQueryTest {
 

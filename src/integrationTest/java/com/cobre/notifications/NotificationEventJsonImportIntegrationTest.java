@@ -1,6 +1,11 @@
 package com.cobre.notifications;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cobre.notifications.adapter.in.bootstrap.NotificationEventJsonImporter;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +16,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
@@ -42,8 +41,7 @@ class NotificationEventJsonImportIntegrationTest extends PostgresqlIntegrationTe
     void importsTheJsonFileIdempotentlyAndPreservesItsDeliveryDate() throws Exception {
         Integer initialCount = eventCount();
         Integer distinctCreationDates = jdbcTemplate.queryForObject(
-                "SELECT count(DISTINCT created_at) FROM notification_events",
-                Integer.class);
+                "SELECT count(DISTINCT created_at) FROM notification_events", Integer.class);
         Instant createdAtBefore = createdAt("EVT001");
         Instant deliveryDate = deliveryDate("EVT001");
 
@@ -63,16 +61,12 @@ class NotificationEventJsonImportIntegrationTest extends PostgresqlIntegrationTe
 
     private Instant createdAt(String eventId) {
         return jdbcTemplate.queryForObject(
-                "SELECT created_at FROM notification_events WHERE event_id = ?",
-                Instant.class,
-                eventId);
+                "SELECT created_at FROM notification_events WHERE event_id = ?", Instant.class, eventId);
     }
 
     private Instant deliveryDate(String eventId) {
         return jdbcTemplate.queryForObject(
-                "SELECT delivery_date FROM notification_events WHERE event_id = ?",
-                Instant.class,
-                eventId);
+                "SELECT delivery_date FROM notification_events WHERE event_id = ?", Instant.class, eventId);
     }
 
     @TestConfiguration(proxyBeanMethods = false)

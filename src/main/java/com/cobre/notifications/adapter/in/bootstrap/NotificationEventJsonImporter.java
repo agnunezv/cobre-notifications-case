@@ -7,6 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,14 +22,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 @Component
 @ConditionalOnProperty(prefix = "notifications.json-import", name = "enabled", havingValue = "true")
@@ -63,8 +62,10 @@ public class NotificationEventJsonImporter implements ApplicationRunner {
                 .toList();
 
         int inserted = importUseCase.importIfAbsent(events);
-        LOGGER.info("Notification JSON import completed: {} inserted, {} already present",
-                inserted, events.size() - inserted);
+        LOGGER.info(
+                "Notification JSON import completed: {} inserted, {} already present",
+                inserted,
+                events.size() - inserted);
     }
 
     private void validate(NotificationEventsJsonFile jsonFile) {

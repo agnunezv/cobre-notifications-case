@@ -7,19 +7,17 @@ import com.cobre.notifications.application.port.outbound.NotificationDeliveryPre
 import com.cobre.notifications.domain.model.DeliveryAttemptOrigin;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
 import com.cobre.notifications.domain.model.NotificationDestination;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Repository;
-
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 @Repository
-public class PostgresqlNotificationDeliveryPreparationRepository
-        implements NotificationDeliveryPreparationRepository {
+public class PostgresqlNotificationDeliveryPreparationRepository implements NotificationDeliveryPreparationRepository {
 
     private static final String LOCK_CLAIM_SQL = """
             SELECT event_id
@@ -133,14 +131,7 @@ public class PostgresqlNotificationDeliveryPreparationRepository
 
         int attemptNumber = nextAttemptNumber(claimedDelivery);
         String correlationId = attemptId.toString();
-        insertAttempt(
-                claimedDelivery,
-                attemptId,
-                attemptNumber,
-                startedAt,
-                null,
-                null,
-                correlationId);
+        insertAttempt(claimedDelivery, attemptId, attemptNumber, startedAt, null, null, correlationId);
 
         return Optional.of(new PreparedNotificationDelivery(
                 attemptId,
@@ -179,14 +170,13 @@ public class PostgresqlNotificationDeliveryPreparationRepository
     }
 
     private boolean lockAvailableClaim(MapSqlParameterSource parameters) {
-        return !jdbcTemplate.queryForList(LOCK_CLAIM_SQL, parameters, String.class).isEmpty();
+        return !jdbcTemplate
+                .queryForList(LOCK_CLAIM_SQL, parameters, String.class)
+                .isEmpty();
     }
 
     private boolean hasOpenAttempt(MapSqlParameterSource parameters) {
-        Boolean hasOpenAttempt = jdbcTemplate.queryForObject(
-                HAS_OPEN_ATTEMPT_SQL,
-                parameters,
-                Boolean.class);
+        Boolean hasOpenAttempt = jdbcTemplate.queryForObject(HAS_OPEN_ATTEMPT_SQL, parameters, Boolean.class);
         return Boolean.TRUE.equals(hasOpenAttempt);
     }
 
@@ -224,18 +214,12 @@ public class PostgresqlNotificationDeliveryPreparationRepository
                 .addValue("attemptNumber", attemptNumber)
                 .addValue("origin", origin(claimedDelivery, attemptNumber).name())
                 .addValue("startedAt", Timestamp.from(startedAt))
-                .addValue(
-                        "finishedAt",
-                        finishedAt == null ? null : Timestamp.from(finishedAt),
-                        Types.TIMESTAMP)
+                .addValue("finishedAt", finishedAt == null ? null : Timestamp.from(finishedAt), Types.TIMESTAMP)
                 .addValue(
                         "result",
                         failureCategory == null ? null : DeliveryAttemptResult.PERMANENT_FAILURE.name(),
                         Types.VARCHAR)
-                .addValue(
-                        "failureCategory",
-                        failureCategory == null ? null : failureCategory.name(),
-                        Types.VARCHAR)
+                .addValue("failureCategory", failureCategory == null ? null : failureCategory.name(), Types.VARCHAR)
                 .addValue(
                         "failureDescription",
                         failureCategory == null ? null : failureCategory.description(),
@@ -245,9 +229,7 @@ public class PostgresqlNotificationDeliveryPreparationRepository
         jdbcTemplate.update(INSERT_ATTEMPT_SQL, parameters);
     }
 
-    private MapSqlParameterSource claimParameters(
-            ClaimedNotificationDelivery claimedDelivery,
-            Instant preparedAt) {
+    private MapSqlParameterSource claimParameters(ClaimedNotificationDelivery claimedDelivery, Instant preparedAt) {
         return new MapSqlParameterSource()
                 .addValue("eventId", claimedDelivery.eventId())
                 .addValue("deliveryCycle", claimedDelivery.deliveryCycle())
@@ -255,9 +237,7 @@ public class PostgresqlNotificationDeliveryPreparationRepository
                 .addValue("operationAt", Timestamp.from(preparedAt));
     }
 
-    private DeliveryAttemptOrigin origin(
-            ClaimedNotificationDelivery claimedDelivery,
-            int attemptNumber) {
+    private DeliveryAttemptOrigin origin(ClaimedNotificationDelivery claimedDelivery, int attemptNumber) {
         if (claimedDelivery.leaseRecovery()) {
             return DeliveryAttemptOrigin.LEASE_RECOVERY;
         }
