@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive solution proposal for Cobre's reliable notification delivery technical case."
+    />
+    <meta name="theme-color" content="#070b0e" />
+    <title>Cobre Notification Platform — Solution Proposal</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <svg class="icon-definitions" aria-hidden="true">
+      <defs>
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24">
+          <path d="M19 12H5m6-6-6 6 6 6" />
+        </symbol>
+        <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+          <path d="M5 12h14m-6-6 6 6-6 6" />
+        </symbol>
+        <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+          <path d="m7 10 5 5 5-5" />
+        </symbol>
+        <symbol id="icon-menu" viewBox="0 0 24 24">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </symbol>
+        <symbol id="icon-close" viewBox="0 0 24 24">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24">
+          <path d="m8 8-4 4 4 4m8-8 4 4-4 4m-5.5 3 3-14" />
+        </symbol>
+        <symbol id="icon-platform" viewBox="0 0 24 24">
+          <path d="M12 3v5m0 8v5M5 8l4 2m6 4 4 2M5 16l4-2m6-4 4-2" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="12" cy="3" r="1.5" />
+          <circle cx="12" cy="21" r="1.5" />
+          <circle cx="4.5" cy="7.5" r="1.5" />
+          <circle cx="19.5" cy="7.5" r="1.5" />
+          <circle cx="4.5" cy="16.5" r="1.5" />
+          <circle cx="19.5" cy="16.5" r="1.5" />
+        </symbol>
+        <symbol id="icon-database" viewBox="0 0 24 24">
+          <ellipse cx="12" cy="5" rx="7" ry="3" />
+          <path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7" />
+        </symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3c2.5 2.5 3.7 5.5 3.7 9S14.5 18.5 12 21c-2.5-2.5-3.7-5.5-3.7-9S9.5 5.5 12 3Z" />
+        </symbol>
+        <symbol id="icon-chart" viewBox="0 0 24 24">
+          <path d="M5 20V10m5 10V4m5 16v-7m5 7V7" />
+        </symbol>
+        <symbol id="icon-file" viewBox="0 0 24 24">
+          <path d="M7 3h7l4 4v14H7zM14 3v5h4" />
+          <path d="M10 12h5m-5 4h5" />
+        </symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v6l4 2" />
+        </symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24">
+          <path d="M12 3 5 6v5c0 4.6 2.8 8.2 7 10 4.2-1.8 7-5.4 7-10V6z" />
+          <path d="m9 12 2 2 4-5" />
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24">
+          <path d="m5 12 4 4L19 6" />
+        </symbol>
+        <symbol id="icon-alert" viewBox="0 0 24 24">
+          <path d="M12 4 3.5 20h17z" />
+          <path d="M12 9v5m0 3h.01" />
+        </symbol>
+        <symbol id="icon-retry" viewBox="0 0 24 24">
+          <path d="M20 7v5h-5M4 17v-5h5" />
+          <path d="M6.1 8a7 7 0 0 1 11.5-1L20 12M4 12l2.4 5a7 7 0 0 0 11.5-1" />
+        </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24">
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+        </symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21c.8-4.2 3.5-6 8-6s7.2 1.8 8 6" />
+        </symbol>
+        <symbol id="icon-tag" viewBox="0 0 24 24">
+          <path d="M3 11V4h7l10 10-7 7z" />
+          <circle cx="7.5" cy="8.5" r="1" />
+        </symbol>
+        <symbol id="icon-api" viewBox="0 0 24 24">
+          <path d="M9 4C6 4 6 6 6 8v1c0 2-1 3-3 3 2 0 3 1 3 3v1c0 2 0 4 3 4M15 4c3 0 3 2 3 4v1c0 2 1 3 3 3-2 0-3 1-3 3v1c0 2 0 4-3 4" />
+        </symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24">
+          <path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3zM10 20h4" />
+        </symbol>
+        <symbol id="icon-test" viewBox="0 0 24 24">
+          <path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3" />
+          <path d="M8 15h8" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <header class="app-header">
+      <button class="wordmark" type="button" data-go-to="0">Cobre Notification Platform</button>
+      <div class="header-actions">
+        <span class="version-label">Current <strong>V1</strong></span>
+        <button class="explore-button" type="button" data-open-explorer>
+          <svg aria-hidden="true"><use href="#icon-menu"></use></svg>
+          <span>Explore</span>
+        </button>
+        <div class="progress-control" aria-label="Presentation progress">
+          <button type="button" data-previous aria-label="Previous section">
+            <svg aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          </button>
+          <output class="progress-value" aria-live="polite">
+            <strong data-current-number>01</strong><span>/</span><span>10</span>
+          </output>
+          <button type="button" data-next aria-label="Next section">
+            <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="presentation" id="presentation">
+      <section class="slide slide-cover is-active" id="reliable-delivery" data-slide="0" aria-labelledby="cover-title">
+        <div class="cover-copy">
+          <h1 id="cover-title">Reliable<br />Notification<br />Delivery</h1>
+          <p>An observable, tenant-aware and at-least-once notification delivery platform.</p>
+          <div class="cover-actions">
+            <button class="button button-primary" type="button" data-go-to="1">
+              Start guided tour
+              <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+            </button>
+            <button class="button button-secondary" type="button" data-open-explorer>
+              Explore solution
+              <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+            </button>
+          </div>
+          <a class="source-link" href="https://github.com/agnunezv/cobre-notifications-case" target="_blank" rel="noreferrer">
+            View source code
+            <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+          </a>
+        </div>
+
+        <div class="cover-diagram" aria-label="Notification delivery system overview">
+          <button class="diagram-card" type="button" data-cover-detail="Events enter through a replaceable inbound adapter.">
+            <svg aria-hidden="true"><use href="#icon-code"></use></svg>
+            <span>Event source</span>
+          </button>
+          <span class="connector connector-active" aria-hidden="true"></span>
+          <button class="diagram-card diagram-card-core" type="button" data-cover-detail="The platform owns delivery state, attempts and recovery.">
+            <svg aria-hidden="true"><use href="#icon-platform"></use></svg>
+            <span>Notification platform</span>
+            <small>At-least-once delivery</small>
+          </button>
+          <span class="connector connector-active" aria-hidden="true"></span>
+          <button class="diagram-card" type="button" data-cover-detail="Client endpoints receive an HTTPS webhook.">
+            <svg aria-hidden="true"><use href="#icon-globe"></use></svg>
+            <span>HTTPS webhook</span>
+          </button>
+          <div class="cover-supports">
+            <div class="cover-branches" aria-hidden="true">
+              <i class="branch-trunk"></i>
+              <i class="branch-bar"></i>
+              <i class="branch-drop branch-drop-left"></i>
+              <i class="branch-drop branch-drop-right"></i>
+            </div>
+            <button class="diagram-card diagram-card-small diagram-card-database" type="button" data-cover-detail="PostgreSQL persists events, attempts and coordinated claims.">
+              <svg aria-hidden="true"><use href="#icon-database"></use></svg>
+              <span>PostgreSQL</span>
+            </button>
+            <button class="diagram-card diagram-card-small diagram-card-monitoring" type="button" data-cover-detail="Metrics and persisted evidence support operational response.">
+              <svg aria-hidden="true"><use href="#icon-alert"></use></svg>
+              <span>Monitoring</span>
+            </button>
+          </div>
+          <p class="diagram-detail" data-cover-detail-output>Follow the event from intake to observable delivery.</p>
+        </div>
+      </section>
+
+      <section class="slide slide-challenge" id="the-challenge" data-slide="1" aria-labelledby="challenge-title" hidden>
+        <div class="slide-heading">
+          <h2 id="challenge-title">The Challenge</h2>
+          <p>Make notification delivery dependable for clients and explainable for operators.</p>
+        </div>
+        <div class="challenge-layout">
+          <div class="challenge-options" role="list" aria-label="Challenge areas">
+            <button class="challenge-option is-selected" type="button" data-challenge="delivery">
+              <span>01</span>
+              <strong>Reliable Delivery</strong>
+              <small>Deliver, retry and persist outcomes.</small>
+            </button>
+            <button class="challenge-option" type="button" data-challenge="self-service">
+              <span>02</span>
+              <strong>Client Self-Service</strong>
+              <small>List, inspect and replay failed events.</small>
+            </button>
+            <button class="challenge-option" type="button" data-challenge="operations">
+              <span>03</span>
+              <strong>Operational Response</strong>
+              <small>Detect deviations and investigate complaints.</small>
+            </button>
+          </div>
+          <div class="challenge-focus" aria-live="polite">
+            <span class="focus-index" data-challenge-index>01</span>
+            <h3 data-challenge-title>Reliable Delivery</h3>
+            <p data-challenge-description>
+              Confirm ownership, resolve the active subscription, send the HTTPS webhook and make every outcome durable.
+            </p>
+            <div class="principles" aria-label="Design principles">
+              <span>Reliable</span>
+              <span>Tenant-aware</span>
+              <span>Observable</span>
+              <span>Explicit about failure</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide slide-architecture" id="architecture" data-slide="2" aria-labelledby="architecture-title" hidden>
+        <div class="slide-heading slide-heading-inline">
+          <div>
+            <h2 id="architecture-title">Architecture at a Glance</h2>
+            <p>Adapters change. Delivery rules remain.</p>
+          </div>
+          <div class="segmented-control" role="tablist" aria-label="Architecture view">
+            <button class="is-selected" type="button" role="tab" aria-selected="true" data-architecture-view="context">System context</button>
+            <button type="button" role="tab" aria-selected="false" data-architecture-view="inside">Inside the platform</button>
+          </div>
+        </div>
+        <div class="architecture-canvas" data-architecture-canvas></div>
+        <p class="canvas-caption" data-architecture-caption>
+          The platform owns notification delivery and its operational history; the client owns the side effect after receiving the webhook.
+        </p>
+      </section>
+
+      <section class="slide slide-journey" id="notification-journey" data-slide="3" aria-labelledby="journey-title" hidden>
+        <div class="slide-heading slide-heading-inline">
+          <div>
+            <h2 id="journey-title">A Notification Journey</h2>
+            <p>One event, one durable history, explicit ownership at every step.</p>
+          </div>
+          <div class="event-reference" aria-label="Selected source event">
+            <span>EVT003</span>
+            <span>CLIENT002</span>
+            <span>credit_transfer</span>
+          </div>
+        </div>
+        <div class="journey-track" role="list" aria-label="Notification journey">
+          <button class="journey-step is-selected" type="button" data-journey-step="0"><span>01</span><strong>Import</strong></button>
+          <span class="track-arrow" aria-hidden="true"></span>
+          <button class="journey-step" type="button" data-journey-step="1"><span>02</span><strong>Persist</strong></button>
+          <span class="track-arrow" aria-hidden="true"></span>
+          <button class="journey-step" type="button" data-journey-step="2"><span>03</span><strong>Resolve</strong></button>
+          <span class="track-arrow" aria-hidden="true"></span>
+          <button class="journey-step" type="button" data-journey-step="3"><span>04</span><strong>Claim</strong></button>
+          <span class="track-arrow" aria-hidden="true"></span>
+          <button class="journey-step" type="button" data-journey-step="4"><span>05</span><strong>Attempt</strong></button>
+          <span class="track-arrow" aria-hidden="true"></span>
+          <button class="journey-step" type="button" data-journey-step="5"><span>06</span><strong>Deliver</strong></button>
+          <span class="track-arrow" aria-hidden="true"></span>
+          <button class="journey-step" type="button" data-journey-step="6"><span>07</span><strong>Complete</strong></button>
+        </div>
+        <div class="journey-evidence">
+          <div>
+            <span class="detail-label">Responsibility</span>
+            <strong data-journey-owner>JSON importer</strong>
+          </div>
+          <div>
+            <span class="detail-label">Durable evidence</span>
+            <strong data-journey-evidence>Validated source event</strong>
+          </div>
+          <div>
+            <span class="detail-label">State</span>
+            <strong class="state-value" data-journey-state>Imported status preserved</strong>
+          </div>
+        </div>
+        <div class="worker-inset">
+          <div>
+            <span>Worker A</span>
+            <strong>EVT011</strong>
+          </div>
+          <div>
+            <span>Worker B</span>
+            <strong>EVT012</strong>
+          </div>
+          <p>PostgreSQL claims prevent workers from processing the same due event.</p>
+        </div>
+      </section>
+
+      <section class="slide slide-reliability" id="reliability" data-slide="4" aria-labelledby="reliability-title" hidden>
+        <div class="slide-heading">
+          <h2 id="reliability-title">Reliability Under Failure</h2>
+          <p>Every outcome becomes an explicit state transition.</p>
+        </div>
+        <div class="scenario-control" role="tablist" aria-label="Delivery failure scenario">
+          <button class="is-selected" type="button" role="tab" aria-selected="true" data-scenario="success">2xx</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="rate-limit">429</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="server-error">500</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="timeout">Timeout</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="tls">TLS failure</button>
+          <button type="button" role="tab" aria-selected="false" data-scenario="crash">Worker crash</button>
+        </div>
+        <div class="reliability-layout">
+          <div>
+            <div class="reliability-flow" data-reliability-flow></div>
+            <div class="reliability-note is-positive" data-reliability-note>
+              <svg aria-hidden="true"><use href="#icon-check"></use></svg>
+              <p>The client accepted the webhook and the final event state is durable.</p>
+            </div>
+          </div>
+          <dl class="outcome-summary">
+            <div><dt>Result</dt><dd data-outcome-result>Success</dd></div>
+            <div><dt>State</dt><dd data-outcome-state>COMPLETED</dd></div>
+            <div><dt>Persisted evidence</dt><dd data-outcome-evidence>Attempt record with HTTP status and latency</dd></div>
+            <div><dt>Next action</dt><dd data-outcome-action>No further delivery action</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="slide slide-api" id="self-service" data-slide="5" aria-labelledby="api-title" hidden>
+        <div class="slide-heading">
+          <h2 id="api-title">Self-Service and Tenant Isolation</h2>
+          <p>The authenticated principal defines the tenant boundary.</p>
+        </div>
+        <div class="api-layout">
+          <div class="endpoint-list" role="list">
+            <button class="endpoint-row is-selected" type="button" aria-pressed="true" data-endpoint="list">
+              <span class="method method-get">GET</span><code>/notification_events</code><span>List and filter</span>
+            </button>
+            <button class="endpoint-row" type="button" aria-pressed="false" data-endpoint="details">
+              <span class="method method-get">GET</span><code>/notification_events/{id}</code><span>Inspect one event</span>
+            </button>
+            <button class="endpoint-row" type="button" aria-pressed="false" data-endpoint="replay">
+              <span class="method method-post">POST</span><code>/notification_events/{id}/replay</code><span>Replay FAILED</span>
+            </button>
+            <div class="endpoint-detail">
+              <span class="detail-label">Contract</span>
+              <p data-endpoint-detail>Returns only the authenticated client's events with date, status and bounded pagination filters.</p>
+            </div>
+          </div>
+          <div class="tenant-path">
+            <div class="tenant-flow" aria-label="Tenant isolation path">
+              <span>Bearer token</span><i></i><span>Principal</span><i></i><span>client_id</span><i></i><span>SQL predicate</span>
+            </div>
+            <div class="access-simulator">
+              <div class="simulator-controls" role="tablist" aria-label="Access scenario">
+                <button class="is-selected" type="button" role="tab" aria-selected="true" data-access="own">Own event</button>
+                <button type="button" role="tab" aria-selected="false" data-access="cross">Another client's event</button>
+              </div>
+              <div class="access-result">
+                <div><span>Authenticated client</span><strong>CLIENT002</strong></div>
+                <div><span>Requested event</span><strong data-access-event>EVT003 · CLIENT002</strong></div>
+                <output class="http-result is-success" data-access-result>200 OK</output>
+                <p class="access-explanation" data-access-explanation>The event belongs to the authenticated client.</p>
+              </div>
+            </div>
+            <pre><code>WHERE event_id = :notificationEventId
+  AND client_id = :clientId</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide slide-operations" id="operations" data-slide="6" aria-labelledby="operations-title" hidden>
+        <div class="slide-heading">
+          <h2 id="operations-title">From Complaint to Root Cause</h2>
+          <p class="complaint">“CLIENT002 is not receiving notifications.”</p>
+        </div>
+        <div class="diagnostic-context" aria-hidden="true">
+          <span>Near real-time signal</span><i></i><span>Persisted attempt history</span>
+        </div>
+        <div class="diagnostic-path" role="list" aria-label="Operational investigation path">
+          <button class="is-selected" type="button" aria-pressed="true" data-diagnostic-step="0"><span>1</span><svg aria-hidden="true"><use href="#icon-bell"></use></svg><strong>Alert</strong></button>
+          <i class="diagnostic-arrow" aria-hidden="true"></i>
+          <button type="button" aria-pressed="false" data-diagnostic-step="1"><span>2</span><svg aria-hidden="true"><use href="#icon-user"></use></svg><strong>Affected client</strong><small>CLIENT002</small></button>
+          <i class="diagnostic-arrow" aria-hidden="true"></i>
+          <button type="button" aria-pressed="false" data-diagnostic-step="2"><span>3</span><svg aria-hidden="true"><use href="#icon-tag"></use></svg><strong>Event type</strong><small>credit_transfer</small></button>
+          <i class="diagnostic-arrow" aria-hidden="true"></i>
+          <button type="button" aria-pressed="false" data-diagnostic-step="3"><span>4</span><svg aria-hidden="true"><use href="#icon-file"></use></svg><strong>Specific event</strong><small>EVT003</small></button>
+          <i class="diagnostic-arrow" aria-hidden="true"></i>
+          <button type="button" aria-pressed="false" data-diagnostic-step="4"><span>5</span><svg aria-hidden="true"><use href="#icon-clock"></use></svg><strong>Attempt timeline</strong></button>
+          <i class="diagnostic-arrow" aria-hidden="true"></i>
+          <button type="button" aria-pressed="false" data-diagnostic-step="5"><span>6</span><svg aria-hidden="true"><use href="#icon-alert"></use></svg><strong>Failure category</strong><small>TIMEOUT</small></button>
+        </div>
+        <div class="diagnostic-detail">
+          <svg aria-hidden="true"><use data-diagnostic-detail-icon href="#icon-bell"></use></svg>
+          <p data-diagnostic-detail>Prometheus evaluates a delivery deviation and Alertmanager exposes the active signal.</p>
+        </div>
+        <p class="privacy-note"><svg aria-hidden="true"><use href="#icon-lock"></use></svg>Payload and destination remain hidden.</p>
+      </section>
+
+      <section class="slide slide-security" id="security" data-slide="7" aria-labelledby="security-title" hidden>
+        <div class="slide-heading slide-heading-inline">
+          <div>
+            <h2 id="security-title">Security Assessment</h2>
+            <p>Prioritized risks, implemented controls and explicit residual exposure.</p>
+          </div>
+          <a
+            class="quiet-link"
+            href="https://github.com/agnunezv/cobre-notifications-case/blob/main/docs/security-assessment.md"
+            target="_blank"
+            rel="noreferrer"
+          >Read full assessment</a>
+        </div>
+        <div class="security-layout">
+          <div class="risk-list" role="list">
+            <button class="risk-row is-selected" type="button" aria-pressed="true" data-risk="access"><span>A01</span><strong>Broken Access Control</strong><small>High impact · High likelihood</small></button>
+            <button class="risk-row" type="button" aria-pressed="false" data-risk="injection"><span>A05</span><strong>Injection</strong><small>High impact · Medium likelihood</small></button>
+            <button class="risk-row" type="button" aria-pressed="false" data-risk="supply"><span>A03</span><strong>Software Supply Chain</strong><small>High impact · Medium likelihood</small></button>
+          </div>
+          <div class="risk-detail" aria-live="polite">
+            <div class="risk-summary">
+              <div><span>Threat</span><p data-risk-threat>A client attempts to read or replay another client's notification.</p></div>
+              <div><span>Implemented control</span><p data-risk-control>Principal-derived client ownership and tenant predicates on every read and mutation.</p></div>
+              <div><span>Residual risk</span><strong data-risk-residual>Low</strong></div>
+            </div>
+            <pre><code data-risk-code>WHERE event_id = :notificationEventId
+  AND client_id = :clientId</code></pre>
+          </div>
+        </div>
+        <details class="public-api-considerations">
+          <summary>Public API considerations</summary>
+          <p>A07 and A02 require TLS at ingress, managed credential lifecycle, rate limits and private operational endpoints before public exposure.</p>
+        </details>
+      </section>
+
+      <section class="slide slide-confidence" id="confidence" data-slide="8" aria-labelledby="confidence-title" hidden>
+        <div class="slide-heading">
+          <h2 id="confidence-title">Decisions and Engineering Confidence</h2>
+        </div>
+        <div class="confidence-layout">
+          <div class="decision-panel">
+            <h3>Key decisions</h3>
+            <div class="decision-list" role="list">
+              <button class="decision-row is-selected" type="button" aria-pressed="true" data-decision="postgres">PostgreSQL for state and coordination</button>
+              <button class="decision-row" type="button" aria-pressed="false" data-decision="delivery">At-least-once delivery</button>
+              <button class="decision-row" type="button" aria-pressed="false" data-decision="deployable">One Spring Boot deployable</button>
+              <button class="decision-row" type="button" aria-pressed="false" data-decision="hexagonal">Hexagonal boundaries</button>
+            </div>
+            <dl class="decision-detail">
+              <div><dt>Rationale</dt><dd data-decision-rationale>Durable state and coordinated claims without another runtime dependency.</dd></div>
+              <div><dt>Trade-off</dt><dd data-decision-tradeoff>Polling and claims consume database capacity.</dd></div>
+            </dl>
+          </div>
+          <div class="quality-panel">
+            <h3>Quality gate</h3>
+            <ol class="quality-pipeline">
+              <li><button type="button" aria-pressed="false" data-quality-detail="Automatic formatting keeps the codebase consistent."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>Spotless</span></button></li>
+              <li><button type="button" aria-pressed="false" data-quality-detail="Unit and PostgreSQL integration tests verify behavior and adapters."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>Tests</span></button></li>
+              <li><button type="button" aria-pressed="false" data-quality-detail="Coverage verification protects the main behavioral surface."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>JaCoCo</span><small>95.1% lines · 74.8% branches</small></button></li>
+              <li><button type="button" aria-pressed="false" data-quality-detail="Static analysis rejects medium-confidence defects."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>SpotBugs</span></button></li>
+              <li><button type="button" aria-pressed="false" data-quality-detail="Mutation testing checks whether assertions detect changed behavior."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>PITest</span><small>73% mutation coverage</small></button></li>
+              <li><button type="button" aria-pressed="false" data-quality-detail="The production runtime classpath has no active known vulnerabilities."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>Dependency Check</span><small>0 active vulnerabilities</small></button></li>
+              <li><button type="button" aria-pressed="false" data-quality-detail="GitHub Actions runs the complete quality gate on main."><svg aria-hidden="true"><use href="#icon-check"></use></svg><span>Build accepted</span></button></li>
+            </ol>
+            <p class="quality-detail" data-quality-output>Select a gate to see what confidence it adds.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide slide-coverage" id="case-coverage" data-slide="9" aria-labelledby="coverage-title" hidden>
+        <div class="coverage-intro">
+          <h2 id="coverage-title">Case Coverage</h2>
+          <p>A focused V1 that makes delivery state, failure and ownership explicit.</p>
+        </div>
+        <div class="coverage-checklist" aria-label="Technical case requirement coverage">
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>HTTPS webhook delivery</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Configurable retries</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Final delivery state</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Self-service API</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Failed-event replay</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Tenant isolation</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Near real-time observability</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>Hexagonal architecture</span>
+          <span><svg aria-hidden="true"><use href="#icon-check"></use></svg>OWASP assessment</span>
+        </div>
+        <div class="coverage-actions">
+          <a class="button button-primary" href="https://github.com/agnunezv/cobre-notifications-case" target="_blank" rel="noreferrer">View GitHub repository<svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+          <a
+            class="button button-secondary"
+            href="https://github.com/agnunezv/cobre-notifications-case/blob/main/docs/architecture-baseline.md"
+            target="_blank"
+            rel="noreferrer"
+          >Read architecture</a>
+          <a
+            class="button button-secondary"
+            href="https://github.com/agnunezv/cobre-notifications-case/blob/main/docs/security-assessment.md"
+            target="_blank"
+            rel="noreferrer"
+          >Read security assessment</a>
+        </div>
+        <p class="appendix-note">API examples, lifecycle details, metrics and AI usage remain available as supporting material.</p>
+      </section>
+    </main>
+
+    <footer class="presentation-footer">
+      <button type="button" data-previous class="footer-navigation footer-previous">
+        <svg aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+        <span><small>Previous</small><strong data-previous-label>Case Coverage</strong></span>
+      </button>
+      <div class="progress-track" aria-hidden="true"><span data-progress-track></span></div>
+      <button type="button" data-next class="footer-navigation footer-next">
+        <span><small>Next</small><strong data-next-label>The Challenge</strong></span>
+        <svg aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </button>
+    </footer>
+
+    <dialog class="explorer" data-explorer>
+      <div class="explorer-header">
+        <div>
+          <span>Explore solution</span>
+          <strong>10-minute guided narrative</strong>
+        </div>
+        <button type="button" data-close-explorer aria-label="Close explorer">
+          <svg aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+      </div>
+      <nav aria-label="Solution sections">
+        <button type="button" data-go-to="0"><span>01</span>Reliable Notification Delivery</button>
+        <button type="button" data-go-to="1"><span>02</span>The Challenge</button>
+        <button type="button" data-go-to="2"><span>03</span>Architecture at a Glance</button>
+        <button type="button" data-go-to="3"><span>04</span>A Notification Journey</button>
+        <button type="button" data-go-to="4"><span>05</span>Reliability Under Failure</button>
+        <button type="button" data-go-to="5"><span>06</span>Self-Service and Tenant Isolation</button>
+        <button type="button" data-go-to="6"><span>07</span>From Complaint to Root Cause</button>
+        <button type="button" data-go-to="7"><span>08</span>Security Assessment</button>
+        <button type="button" data-go-to="8"><span>09</span>Decisions and Engineering Confidence</button>
+        <button type="button" data-go-to="9"><span>10</span>Case Coverage</button>
+      </nav>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
