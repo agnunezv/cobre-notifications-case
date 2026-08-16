@@ -151,6 +151,13 @@ the monitoring role, and finishes authorization rules with `denyAll`.
 .anyRequest().denyAll()
 ```
 
+Swagger UI and the OpenAPI JSON are deliberate public exceptions for local
+discoverability. They expose endpoint shapes, not credentials, but that
+information still increases reconnaissance value. The same deployment can
+disable both routes with `OPENAPI_ENABLED=false`; a public environment should
+disable them or add ingress authentication and must keep the internal
+monitoring operation private.
+
 A public deployment should terminate TLS at a hardened ingress, keep metrics
 and internal monitoring on a private route, manage secrets outside the
 artifact, apply request and connection limits, and validate environment-specific

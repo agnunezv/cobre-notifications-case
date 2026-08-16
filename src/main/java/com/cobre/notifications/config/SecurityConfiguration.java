@@ -57,6 +57,8 @@ public class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers("/actuator/health/**")
                         .permitAll()
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                        .permitAll()
                         .requestMatchers(
                                 "/actuator/prometheus", "/actuator/metrics", "/actuator/metrics/**", "/actuator/info")
                         .hasRole("MONITORING")

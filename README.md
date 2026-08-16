@@ -12,6 +12,7 @@ A reliable, tenant-isolated, and observable webhook delivery service developed f
 - Durable notification, delivery-cycle, and attempt state in PostgreSQL.
 - Safe coordination across multiple application instances using row locks and leases.
 - Tenant-scoped list, detail, and replay endpoints protected by opaque bearer tokens.
+- An executable OpenAPI contract with separate client and monitoring authorization schemes.
 - Client-aware metrics, operational dashboards, alert rules, and event-level investigation.
 - Automated formatting, tests, coverage, mutation testing, static analysis, and dependency scanning.
 
@@ -36,6 +37,7 @@ The code follows hexagonal boundaries: web, bootstrap, and scheduling adapters i
 - Gradle with Groovy DSL
 - PostgreSQL 17 and Flyway
 - Spring JDBC and Spring Security
+- SpringDoc OpenAPI and Swagger UI
 - Micrometer, Prometheus, Alertmanager, and Grafana
 - JUnit 5, Testcontainers, JaCoCo, PIT, SpotBugs, Spotless, and OWASP Dependency-Check
 
@@ -95,9 +97,18 @@ curl http://localhost:8080/actuator/health
 
 Flyway creates the schema automatically. With the example import enabled, a fresh database contains the ten notification events supplied with the case.
 
+The local executable API contract is available at:
+
+- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+Both documentation routes are intentionally public for the local demonstration. Use Swagger UI's **Authorize** action with a configured client token for self-service operations or the monitoring token for the read-only investigation endpoint. Set `OPENAPI_ENABLED=false`, or protect these routes at the ingress, before exposing an equivalent deployment publicly.
+
 ## Self-service API
 
 All self-service endpoints derive `client_id` from the bearer token. A missing event and an event owned by another client both return `404 Not Found` to avoid disclosing cross-tenant existence.
+
+The table below is a quick reference; Swagger UI is the executable source for parameters, response codes, schemas, and the two opaque bearer-token roles.
 
 | Method | Endpoint | Behavior |
 | --- | --- | --- |
@@ -129,20 +140,23 @@ The `POST` request changes the persisted state. With the worker disabled, the ac
 
 ## Demonstrate webhook delivery
 
-The worker and subscription bootstrap are disabled by default so the application can be explored without sending external requests. To exercise the end-to-end delivery flow, configure a controlled HTTPS receiver in `.env` before starting the application:
+The worker and subscription bootstrap are disabled by default so the application can be explored without sending external requests. To exercise the end-to-end delivery flow, configure the controlled HTTPS receiver provided for the demonstration in `.env` before starting the application:
 
 ```dotenv
 NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENABLED=true
-NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ID=DEMO_SUBSCRIPTION
-NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_CLIENT_ID=CLIENT002
 NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENDPOINT_URL=https://your-controlled-receiver.example/webhook
-NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_EVENT_TYPES=credit_transfer
 NOTIFICATION_WORKER_ENABLED=true
 ```
 
+The declarative bootstrap configures three tenant-scoped subscriptions atomically during one startup and points them to the same physical webhook. Each subscription contains the event types present for its client in the supplied case data. Repeated startup is idempotent by `subscription_id`. Endpoint URLs are not unique in persistence, so the routing model can assign independent URLs later without a schema or domain change.
+
 On a fresh database, start with this configuration and then replay `EVT003`. If it was already replayed while the worker was disabled, restarting with this configuration is sufficient: the worker will claim the existing due event. It persists every attempt, sends the webhook, and moves the event to `COMPLETED`, `RETRY_SCHEDULED`, or `FAILED` according to the outcome and retry policy.
 
-Delivery is intentionally at-least-once. A timeout or worker crash can leave the client outcome ambiguous, so consumers should deduplicate using `event_id`.
+An event without an exact active match for its `client_id` and `event_type` fails safely with `SUBSCRIPTION_NOT_FOUND`; the platform does not fall back to another client's subscription. The event and its delivery intent remain persisted. After adding the missing route and restarting the application, an operator must replay the `FAILED` event so the new delivery cycle resolves and snapshots the destination.
+
+Changing the shared URL affects deliveries that have not yet captured a destination and new replay cycles. Automatic retries inside an existing cycle continue using `destination_url_snapshot`. Removing an entry from configuration does not deactivate its persisted subscription; dynamic onboarding, deactivation, and authoritative reconciliation remain outside this bootstrap's V1 scope.
+
+Delivery is intentionally at-least-once. The shared receiver gets `client_id` in the JSON envelope, the stable `event_id` as `Idempotency-Key`, and a per-attempt `X-Correlation-Id`. A timeout or worker crash can leave the outcome ambiguous, so consumers must atomically deduplicate the resulting side effect; the header communicates the key but cannot enforce receiver behavior.
 
 ## Observability
 

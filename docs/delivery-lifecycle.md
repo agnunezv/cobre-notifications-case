@@ -63,8 +63,10 @@ sequenceDiagram
     Worker->>Database: Atomically close attempt and update event
 ```
 
-The worker sends `event_id`, `event_type`, and `content` as JSON, with
-`X-Notification-Event-Id` and `X-Correlation-Id` headers.
+The worker sends `event_id`, `client_id`, `event_type`, and `content` as JSON.
+`Idempotency-Key` repeats the stable `event_id`, allowing a shared receiver to
+deduplicate automatic retries and manual replays. `X-Correlation-Id` identifies
+one particular HTTP attempt and therefore changes between retries.
 
 ## Subscription and destination rules
 
@@ -101,8 +103,9 @@ retry. The default is four total attempts with delays of 1, 5, and 30 seconds.
 
 Timeouts are ambiguous: the client might have processed the request even though
 the platform did not receive its response. They remain retryable, which is why
-the delivery guarantee is at-least-once and clients must deduplicate by event
-identifier.
+the delivery guarantee is at-least-once. Consumers must atomically deduplicate
+the side effect using the stable `Idempotency-Key`; sending the key cannot by
+itself enforce idempotency in the receiving system.
 
 ## Claims and completion consistency
 

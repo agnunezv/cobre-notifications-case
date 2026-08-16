@@ -11,13 +11,15 @@ out explicitly rather than presented as part of the current system.
 V1 provides:
 
 - Configurable, idempotent import of the case notification JSON file.
-- Optional configuration bootstrap for the HTTPS subscription used in a local
+- Optional configuration bootstrap for the HTTPS subscriptions used in a local
   demonstration.
 - Tenant-safe subscription resolution by client and event type.
 - At-least-once webhook delivery over HTTPS with configurable retries.
 - Durable event state, delivery cycles, and individual attempt outcomes.
 - Automatic recovery of expired worker leases.
 - An authenticated API to list, inspect, and replay notification events.
+- A local executable OpenAPI contract for the self-service and internal
+  monitoring HTTP surfaces.
 - Database-backed worker coordination across application instances.
 - Health endpoints, operational logs, Prometheus delivery metrics, and an
   optional local monitoring stack.
@@ -121,10 +123,16 @@ uses the time accepted by this platform as `created_at`, preserves the source
 `delivery_date`, and inserts events in batches. `ON CONFLICT (event_id) DO
 NOTHING` makes repeated startup imports idempotent.
 
-The optional subscription bootstrap provides the client, HTTPS endpoint, and
-event types needed for the demonstration. It updates one stable subscription
-identifier idempotently and cannot reassign that identifier to another client.
-It is not a replacement for a production subscription-management capability.
+The optional subscription bootstrap provides the clients, shared HTTPS
+endpoint, and event types needed for the demonstration. It validates the
+complete declared list before writing and configures three tenant-scoped
+subscriptions in one transaction. The subscriptions intentionally share one
+physical webhook while preserving independent client and event-type routes;
+the database does not require endpoint URLs to be unique. Each stable
+subscription identifier is updated idempotently and cannot be reassigned to
+another client. The bootstrap is additive: omitting an existing identifier
+does not deactivate it. It is not a replacement for a production
+subscription-management capability.
 
 ### Self-service API
 
@@ -153,6 +161,21 @@ one event by its primary key and its attempts through the existing
 `(event_id, delivery_cycle, attempt_number)` index; no additional index or
 schema migration is required for this access pattern.
 
+### Executable API contract
+
+SpringDoc derives an OpenAPI 3 contract from the implemented controllers and
+their explicit response documentation. Swagger UI exposes the contract at
+`/swagger-ui.html`, while `/v3/api-docs` provides the machine-readable JSON.
+The contract distinguishes the tenant-scoped `clientBearer` identity from the
+read-only `monitoringBearer` identity and does not describe either opaque token
+as a JWT.
+
+The documentation routes are unauthenticated for the local demonstration so a
+reviewer can discover the API before supplying credentials through Swagger
+UI. A public deployment must either disable them with `OPENAPI_ENABLED=false`
+or protect them at the ingress; the internal monitoring operation should also
+remain on a private operational route.
+
 ### Notification delivery
 
 The worker claims due rows in bounded batches using PostgreSQL row locks and
@@ -163,6 +186,13 @@ state. Before each claim, it also recovers a bounded set of expired leases. A
 claim abandoned before opening an HTTP attempt is immediately rescheduled; an
 open attempt is closed as retryable and follows the configured retry policy.
 Late results cannot overwrite a recovered delivery.
+
+Resolution requires one exact active match for `client_id` and `event_type`.
+No match produces a persisted `FAILED` event with
+`SUBSCRIPTION_NOT_FOUND`; multiple matches fail safely as ambiguous. After a
+missing route is added through configuration and the application restarts, the
+operator replays the failed event to open a new cycle and resolve the newly
+available destination. The persisted event and failure evidence are not lost.
 
 ## Security and tenant isolation
 
@@ -194,9 +224,11 @@ belong at a production deployment boundary.
 | One Spring Boot deployable | Keeps the case cohesive and operationally simple. | API and worker share scaling and release boundaries. |
 | PostgreSQL as state store and work queue | Provides durable state and coordinated claims without another runtime dependency. | Polling and claims consume database capacity. |
 | At-least-once delivery | Reflects the ambiguity of failures across an HTTP boundary. | A timeout can produce a duplicate even with durable local state. |
+| Event ID as outbound idempotency key | Gives a shared receiver one stable key across retries and replays. | Exactly-once effects still depend on atomic deduplication by the consumer. |
 | Sequential processing inside each batch | Makes failure isolation and execution easy to reason about. | One slow endpoint delays the remaining events in that batch. |
 | Offset pagination with a maximum page size | Provides a familiar bounded contract for the case dataset. | Deep pages become progressively more expensive. |
 | Static role-scoped bearer tokens | Provides client and monitoring isolation with a small local setup. | Does not provide credential lifecycle or centralized identity management. |
+| Public Swagger UI in local execution | Makes the implemented HTTP contract directly testable during the case review. | Disable or protect documentation and internal operations before public exposure. |
 | Client and event type as metric labels | Makes an affected configured client directly discoverable. | Time-series cardinality grows with clients and event types. |
 | Separate delivery and runtime dashboards | Keeps client diagnosis separate from component-capacity analysis. | Operators sometimes navigate between two views. |
 | Alertmanager with a separate local macOS bridge | Demonstrates grouping, routing, deduplication, and recovery outside product code. | The local receiver is not a production on-call channel. |
@@ -209,7 +241,9 @@ belong at a production deployment boundary.
   destination and does not provide production-grade fault isolation.
 - Prometheus can monitor Grafana and itself while running, but an external
   monitor is still required to detect loss of the whole monitoring stack.
-- A repeated replay after the first accepted transition returns `409`; V1 does
-  not implement an `Idempotency-Key` contract.
+- A repeated replay after the first accepted transition returns `409`; the
+  self-service endpoint does not accept an inbound idempotency key. Outbound
+  webhook attempts separately send the stable event identifier as
+  `Idempotency-Key`.
 - The attached JSON file is a case-specific ingress adapter, not the target
   production integration with Cobre event-producing systems.

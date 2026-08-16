@@ -25,7 +25,7 @@ import org.springframework.web.client.RestClientException;
 @Validated
 public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGateway {
 
-    static final String EVENT_ID_HEADER = "X-Notification-Event-Id";
+    static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
     static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
 
     private final RestClient restClient;
@@ -43,7 +43,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
                     .post()
                     .uri(delivery.destination().endpointUrl())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .header(EVENT_ID_HEADER, delivery.eventId())
+                    .header(IDEMPOTENCY_KEY_HEADER, delivery.eventId())
                     .header(CORRELATION_ID_HEADER, delivery.correlationId())
                     .body(WebhookNotificationRequest.from(delivery))
                     .exchange((request, response) -> response.getStatusCode().value());
@@ -153,11 +153,13 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
 
     private record WebhookNotificationRequest(
             @JsonProperty("event_id") String eventId,
+            @JsonProperty("client_id") String clientId,
             @JsonProperty("event_type") String eventType,
             String content) {
 
         private static WebhookNotificationRequest from(PreparedNotificationDelivery delivery) {
-            return new WebhookNotificationRequest(delivery.eventId(), delivery.eventType(), delivery.content());
+            return new WebhookNotificationRequest(
+                    delivery.eventId(), delivery.clientId(), delivery.eventType(), delivery.content());
         }
     }
 }

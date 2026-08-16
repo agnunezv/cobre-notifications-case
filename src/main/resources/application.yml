@@ -21,6 +21,16 @@ server:
     mbeanregistry:
       enabled: true
 
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:true}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:true}
+    version: 5.32.13
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
 notifications:
   delivery:
     http:
@@ -41,10 +51,29 @@ notifications:
     location: classpath:imports/notification_events.json
   subscription-bootstrap:
     enabled: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENABLED:false}
-    subscription-id: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ID:}
-    client-id: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_CLIENT_ID:}
-    endpoint-url: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENDPOINT_URL:}
-    event-types: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_EVENT_TYPES:}
+    subscriptions:
+      - subscription-id: CLIENT001_DEFAULT
+        client-id: CLIENT001
+        endpoint-url: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENDPOINT_URL:}
+        event-types:
+          - credit_card_payment
+          - credit_deposit
+          - debit_card_withdrawal
+          - debit_subscription
+      - subscription-id: CLIENT002_DEFAULT
+        client-id: CLIENT002
+        endpoint-url: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENDPOINT_URL:}
+        event-types:
+          - credit_transfer
+          - debit_automatic_payment
+          - debit_purchase
+      - subscription-id: CLIENT003_DEFAULT
+        client-id: CLIENT003
+        endpoint-url: ${NOTIFICATION_SUBSCRIPTION_BOOTSTRAP_ENDPOINT_URL:}
+        event-types:
+          - credit_cashback
+          - credit_refund
+          - debit_transfer
   security:
     monitoring:
       token: ${NOTIFICATION_MONITORING_TOKEN:}

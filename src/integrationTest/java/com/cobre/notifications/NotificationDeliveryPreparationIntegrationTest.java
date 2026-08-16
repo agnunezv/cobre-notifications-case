@@ -4,16 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cobre.notifications.application.model.ClaimNotificationDeliveriesCommand;
 import com.cobre.notifications.application.model.ClaimedNotificationDelivery;
+import com.cobre.notifications.application.model.ConfigureNotificationSubscriptionCommand;
 import com.cobre.notifications.application.model.NotificationDeliveryBatchResult;
 import com.cobre.notifications.application.model.NotificationDeliveryFailureCategory;
 import com.cobre.notifications.application.model.PreparedNotificationDelivery;
+import com.cobre.notifications.application.model.ReplayNotificationEventCommand;
 import com.cobre.notifications.application.model.WebhookDeliveryOutcome;
 import com.cobre.notifications.application.port.inbound.ClaimNotificationDeliveriesUseCase;
 import com.cobre.notifications.application.port.inbound.CompleteNotificationDeliveryAttemptUseCase;
+import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionUseCase;
 import com.cobre.notifications.application.port.inbound.PrepareNotificationDeliveryUseCase;
 import com.cobre.notifications.application.port.inbound.ProcessNotificationDeliveryBatchUseCase;
+import com.cobre.notifications.application.port.inbound.ReplayNotificationEventUseCase;
 import com.cobre.notifications.application.port.outbound.NotificationDeliveryGateway;
 import com.cobre.notifications.domain.model.DeliveryAttemptResult;
+import com.cobre.notifications.domain.model.NotificationSubscription;
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -22,6 +27,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +62,12 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
 
     @Autowired
     CompleteNotificationDeliveryAttemptUseCase completeAttemptUseCase;
+
+    @Autowired
+    ConfigureNotificationSubscriptionUseCase configureSubscriptionUseCase;
+
+    @Autowired
+    ReplayNotificationEventUseCase replayUseCase;
 
     @Autowired
     ProcessNotificationDeliveryBatchUseCase processBatchUseCase;
@@ -111,6 +123,29 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     }
 
     @Test
+    void replaysThePersistedEventAfterItsMissingSubscriptionIsConfigured() {
+        String eventId = "CONFIGURE_THEN_REPLAY";
+        URI sharedEndpoint = URI.create("https://hooks.example.com/shared");
+        insertEvent(eventId, "PENDING", NOW.minusSeconds(1), null, null);
+
+        assertThat(prepareUseCase.prepare(claim(eventId))).isEmpty();
+        assertConfigurationFailure(eventId, "SUBSCRIPTION_NOT_FOUND");
+
+        configureSubscriptionUseCase.configure(new ConfigureNotificationSubscriptionCommand(
+                new NotificationSubscription("SUB_CONFIGURED", CLIENT_ID, sharedEndpoint), Set.of(EVENT_TYPE), NOW));
+        replayUseCase.replay(new ReplayNotificationEventCommand(CLIENT_ID, eventId));
+
+        PreparedNotificationDelivery replayed =
+                prepareUseCase.prepare(claim(eventId)).orElseThrow();
+
+        assertThat(replayed.deliveryCycle()).isEqualTo(2);
+        assertThat(replayed.attemptNumber()).isEqualTo(1);
+        assertThat(replayed.destination().endpointUrl()).isEqualTo(sharedEndpoint);
+        assertThat(persistedEvent(eventId).destinationUrl()).isEqualTo(sharedEndpoint.toString());
+        assertThat(onlyOpenAttempt(eventId).origin()).isEqualTo("MANUAL_REPLAY");
+    }
+
+    @Test
     void failsPermanentlyWhenSubscriptionConfigurationIsAmbiguous() {
         insertSubscription("SUB001", "https://hooks.example.com/first", true);
         insertSubscription("SUB002", "https://hooks.example.com/second", true);
@@ -132,8 +167,8 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
     }
 
     @Test
-    void reusesTheBoundDestinationForAutomaticRetries() {
-        insertSubscription("SUB001", "https://hooks.example.com/new-destination", false);
+    void usesTheUpdatedDestinationForNewDeliveriesWhileRetriesKeepTheirSnapshot() {
+        insertSubscription("SUB001", "https://hooks.example.com/new-destination", true);
         insertEvent(
                 "RETRY_SNAPSHOT",
                 "RETRY_SCHEDULED",
@@ -151,6 +186,15 @@ class NotificationDeliveryPreparationIntegrationTest extends PostgresqlIntegrati
         assertThat(onlyOpenAttempt("RETRY_SNAPSHOT").origin()).isEqualTo("AUTOMATIC_RETRY");
         assertThat(persistedEvent("RETRY_SNAPSHOT").destinationUrl())
                 .isEqualTo("https://hooks.example.com/original-destination");
+
+        insertEvent("NEW_DELIVERY", "PENDING", NOW.minusSeconds(1), null, null);
+        PreparedNotificationDelivery newDelivery =
+                prepareUseCase.prepare(claim("NEW_DELIVERY")).orElseThrow();
+
+        assertThat(newDelivery.destination().endpointUrl())
+                .isEqualTo(URI.create("https://hooks.example.com/new-destination"));
+        assertThat(persistedEvent("NEW_DELIVERY").destinationUrl())
+                .isEqualTo("https://hooks.example.com/new-destination");
     }
 
     @Test

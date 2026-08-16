@@ -8,12 +8,14 @@ import com.cobre.notifications.application.model.AmbiguousNotificationSubscripti
 import com.cobre.notifications.application.model.ConfigureNotificationSubscriptionCommand;
 import com.cobre.notifications.application.model.NotificationSubscriptionQuery;
 import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionUseCase;
+import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionsUseCase;
 import com.cobre.notifications.application.port.inbound.ResolveNotificationSubscriptionUseCase;
 import com.cobre.notifications.domain.model.NotificationSubscription;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,9 @@ class NotificationSubscriptionResolutionIntegrationTest extends PostgresqlIntegr
 
     @Autowired
     ConfigureNotificationSubscriptionUseCase configureUseCase;
+
+    @Autowired
+    ConfigureNotificationSubscriptionsUseCase configureAllUseCase;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -151,6 +156,33 @@ class NotificationSubscriptionResolutionIntegrationTest extends PostgresqlIntegr
         assertThat(original.endpointUrl()).isEqualTo(URI.create("https://hooks.example.com/original"));
         assertThat(resolveUseCase.resolve(new NotificationSubscriptionQuery("CLIENT001", "debit_payment")))
                 .isEmpty();
+    }
+
+    @Test
+    void rollsBackTheEntireBatchWhenOneSubscriptionCannotBeConfigured() {
+        insertSubscription("OWNED", "CLIENT002", "https://hooks.example.com/original", true, "credit_payment");
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> configureAllUseCase.configureAll(List.of(
+                        configuration(
+                                "NEW_SUBSCRIPTION",
+                                "CLIENT001",
+                                "https://hooks.example.com/new",
+                                Set.of("credit_transfer"),
+                                NOW.plusSeconds(60)),
+                        configuration(
+                                "OWNED",
+                                "CLIENT001",
+                                "https://hooks.example.com/reassigned",
+                                Set.of("debit_payment"),
+                                NOW.plusSeconds(60)))))
+                .withMessage("Subscription OWNED is already assigned to another client");
+
+        assertThat(subscriptionCount("NEW_SUBSCRIPTION")).isZero();
+        NotificationSubscription original = resolveUseCase
+                .resolve(new NotificationSubscriptionQuery("CLIENT002", "credit_payment"))
+                .orElseThrow();
+        assertThat(original.endpointUrl()).isEqualTo(URI.create("https://hooks.example.com/original"));
     }
 
     private ConfigureNotificationSubscriptionCommand configuration(

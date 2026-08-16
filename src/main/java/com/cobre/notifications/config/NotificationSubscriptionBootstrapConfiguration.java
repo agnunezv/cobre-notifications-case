@@ -1,7 +1,7 @@
 package com.cobre.notifications.config;
 
 import com.cobre.notifications.adapter.in.bootstrap.NotificationSubscriptionBootstrap;
-import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionUseCase;
+import com.cobre.notifications.application.port.inbound.ConfigureNotificationSubscriptionsUseCase;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -15,9 +15,9 @@ public class NotificationSubscriptionBootstrapConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "notifications.subscription-bootstrap", name = "enabled", havingValue = "true")
     NotificationSubscriptionBootstrap notificationSubscriptionBootstrap(
-            ConfigureNotificationSubscriptionUseCase configureSubscription,
+            ConfigureNotificationSubscriptionsUseCase configureSubscriptions,
             NotificationSubscriptionBootstrapProperties properties,
             Clock clock) {
-        return new NotificationSubscriptionBootstrap(configureSubscription, properties, clock);
+        return new NotificationSubscriptionBootstrap(configureSubscriptions, properties, clock);
     }
 }

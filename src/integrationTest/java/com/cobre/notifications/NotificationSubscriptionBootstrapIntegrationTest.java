@@ -18,10 +18,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
             "notifications.subscription-bootstrap.enabled=true",
-            "notifications.subscription-bootstrap.subscription-id=BOOTSTRAP_SUB",
-            "notifications.subscription-bootstrap.client-id=CLIENT002",
-            "notifications.subscription-bootstrap.endpoint-url=https://hooks.example.com/demo",
-            "notifications.subscription-bootstrap.event-types=credit_transfer,debit_transfer"
+            "notifications.subscription-bootstrap.subscriptions[0].subscription-id=CLIENT001_DEFAULT",
+            "notifications.subscription-bootstrap.subscriptions[0].client-id=CLIENT001",
+            "notifications.subscription-bootstrap.subscriptions[0].endpoint-url=https://hooks.example.com/shared",
+            "notifications.subscription-bootstrap.subscriptions[0].event-types=credit_transfer,credit_refund",
+            "notifications.subscription-bootstrap.subscriptions[1].subscription-id=CLIENT002_DEFAULT",
+            "notifications.subscription-bootstrap.subscriptions[1].client-id=CLIENT002",
+            "notifications.subscription-bootstrap.subscriptions[1].endpoint-url=https://hooks.example.com/shared",
+            "notifications.subscription-bootstrap.subscriptions[1].event-types=credit_transfer",
+            "notifications.subscription-bootstrap.subscriptions[2].subscription-id=CLIENT003_DEFAULT",
+            "notifications.subscription-bootstrap.subscriptions[2].client-id=CLIENT003",
+            "notifications.subscription-bootstrap.subscriptions[2].endpoint-url=https://hooks.example.com/shared",
+            "notifications.subscription-bootstrap.subscriptions[2].event-types=credit_refund"
         })
 class NotificationSubscriptionBootstrapIntegrationTest extends PostgresqlIntegrationTestSupport {
 
@@ -42,26 +50,39 @@ class NotificationSubscriptionBootstrapIntegrationTest extends PostgresqlIntegra
     }
 
     @Test
-    void configuresTheDemoSubscriptionAtStartupWithoutCreatingDuplicates() {
+    void configuresAllKnownSubscriptionsWithOneSharedEndpointWithoutCreatingDuplicates() {
         bootstrap.run(new DefaultApplicationArguments(new String[0]));
 
-        NotificationSubscription creditTransfer = resolveUseCase
+        NotificationSubscription clientOneCreditTransfer = resolveUseCase
+                .resolve(new NotificationSubscriptionQuery("CLIENT001", "credit_transfer"))
+                .orElseThrow();
+        NotificationSubscription clientOneCreditRefund = resolveUseCase
+                .resolve(new NotificationSubscriptionQuery("CLIENT001", "credit_refund"))
+                .orElseThrow();
+        NotificationSubscription clientTwoCreditTransfer = resolveUseCase
                 .resolve(new NotificationSubscriptionQuery("CLIENT002", "credit_transfer"))
                 .orElseThrow();
-        NotificationSubscription debitTransfer = resolveUseCase
-                .resolve(new NotificationSubscriptionQuery("CLIENT002", "debit_transfer"))
+        NotificationSubscription clientThreeCreditRefund = resolveUseCase
+                .resolve(new NotificationSubscriptionQuery("CLIENT003", "credit_refund"))
                 .orElseThrow();
 
-        assertThat(creditTransfer).isEqualTo(debitTransfer);
-        assertThat(creditTransfer.subscriptionId()).isEqualTo("BOOTSTRAP_SUB");
-        assertThat(creditTransfer.endpointUrl()).isEqualTo(URI.create("https://hooks.example.com/demo"));
-        assertThat(subscriptionCount()).isEqualTo(1);
-        assertThat(eventTypeCount()).isEqualTo(2);
+        assertThat(clientOneCreditTransfer).isEqualTo(clientOneCreditRefund);
+        assertThat(clientOneCreditTransfer.subscriptionId()).isEqualTo("CLIENT001_DEFAULT");
+        assertThat(clientOneCreditTransfer.endpointUrl()).isEqualTo(URI.create("https://hooks.example.com/shared"));
+        assertThat(clientTwoCreditTransfer.subscriptionId()).isEqualTo("CLIENT002_DEFAULT");
+        assertThat(clientTwoCreditTransfer.endpointUrl()).isEqualTo(URI.create("https://hooks.example.com/shared"));
+        assertThat(clientThreeCreditRefund.subscriptionId()).isEqualTo("CLIENT003_DEFAULT");
+        assertThat(clientThreeCreditRefund.endpointUrl()).isEqualTo(URI.create("https://hooks.example.com/shared"));
+        assertThat(subscriptionCount()).isEqualTo(3);
+        assertThat(eventTypeCount()).isEqualTo(4);
     }
 
     private int subscriptionCount() {
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM subscriptions WHERE subscription_id = 'BOOTSTRAP_SUB'", Integer.class);
+        Integer count = jdbcTemplate.queryForObject("""
+                SELECT count(*)
+                FROM subscriptions
+                WHERE subscription_id IN ('CLIENT001_DEFAULT', 'CLIENT002_DEFAULT', 'CLIENT003_DEFAULT')
+                """, Integer.class);
         return count == null ? 0 : count;
     }
 
@@ -69,7 +90,7 @@ class NotificationSubscriptionBootstrapIntegrationTest extends PostgresqlIntegra
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT count(*)
                 FROM subscription_event_types
-                WHERE subscription_id = 'BOOTSTRAP_SUB'
+                WHERE subscription_id IN ('CLIENT001_DEFAULT', 'CLIENT002_DEFAULT', 'CLIENT003_DEFAULT')
                 """, Integer.class);
         return count == null ? 0 : count;
     }

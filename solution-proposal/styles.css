@@ -1237,6 +1237,27 @@ pre {
   color: var(--muted);
 }
 
+.api-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  color: var(--blue);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.api-doc-link code {
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.api-doc-link:hover span,
+.api-doc-link:focus-visible span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .tenant-path {
   padding-left: clamp(28px, 4vw, 60px);
   border-left: 1px solid var(--border);

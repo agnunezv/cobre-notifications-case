@@ -1,7 +1,7 @@
 package com.cobre.notifications.adapter.out.webhook;
 
 import static com.cobre.notifications.adapter.out.webhook.HttpsNotificationDeliveryAdapter.CORRELATION_ID_HEADER;
-import static com.cobre.notifications.adapter.out.webhook.HttpsNotificationDeliveryAdapter.EVENT_ID_HEADER;
+import static com.cobre.notifications.adapter.out.webhook.HttpsNotificationDeliveryAdapter.IDEMPOTENCY_KEY_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -55,15 +55,16 @@ class HttpsNotificationDeliveryAdapterTest {
     }
 
     @Test
-    void sendsTheNotificationEnvelopeAndCorrelationHeaders() {
+    void sendsTheTenantAwareNotificationEnvelopeAndDeliveryHeaders() {
         server.expect(once(), requestTo(ENDPOINT))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(header(EVENT_ID_HEADER, "EVT001"))
+                .andExpect(header(IDEMPOTENCY_KEY_HEADER, "EVT001"))
                 .andExpect(header(CORRELATION_ID_HEADER, CORRELATION_ID))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json("""
                         {
                           "event_id": "EVT001",
+                          "client_id": "CLIENT001",
                           "event_type": "credit_payment",
                           "content": "Payment confirmed"
                         }
@@ -77,6 +78,22 @@ class HttpsNotificationDeliveryAdapterTest {
         assertThat(result.failureCategory()).isNull();
         assertThat(result.failureDescription()).isNull();
         assertThat(result.latencyMs()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void keepsTheIdempotencyKeyStableWhileCorrelationChangesBetweenAttempts() {
+        UUID retryAttemptId = UUID.fromString("851f5a3a-b06f-41f6-a84a-d73581456cb5");
+        server.expect(once(), requestTo(ENDPOINT))
+                .andExpect(header(IDEMPOTENCY_KEY_HEADER, "EVT001"))
+                .andExpect(header(CORRELATION_ID_HEADER, CORRELATION_ID))
+                .andRespond(withStatus(HttpStatusCode.valueOf(500)));
+        server.expect(once(), requestTo(ENDPOINT))
+                .andExpect(header(IDEMPOTENCY_KEY_HEADER, "EVT001"))
+                .andExpect(header(CORRELATION_ID_HEADER, retryAttemptId.toString()))
+                .andRespond(withStatus(HttpStatusCode.valueOf(200)));
+
+        assertThat(adapter().deliver(delivery()).result()).isEqualTo(DeliveryAttemptResult.RETRYABLE_FAILURE);
+        assertThat(adapter().deliver(delivery(retryAttemptId, 2)).result()).isEqualTo(DeliveryAttemptResult.SUCCESS);
     }
 
     @ParameterizedTest
@@ -164,16 +181,20 @@ class HttpsNotificationDeliveryAdapterTest {
     }
 
     private PreparedNotificationDelivery delivery() {
+        return delivery(ATTEMPT_ID, 1);
+    }
+
+    private PreparedNotificationDelivery delivery(UUID attemptId, int attemptNumber) {
         return new PreparedNotificationDelivery(
-                ATTEMPT_ID,
+                attemptId,
                 "EVT001",
                 "CLIENT001",
                 "credit_payment",
                 "Payment confirmed",
                 new NotificationDestination("SUB001", ENDPOINT),
                 1,
-                1,
-                CORRELATION_ID,
+                attemptNumber,
+                attemptId.toString(),
                 Instant.parse("2026-08-15T12:00:00Z"));
     }
 }
