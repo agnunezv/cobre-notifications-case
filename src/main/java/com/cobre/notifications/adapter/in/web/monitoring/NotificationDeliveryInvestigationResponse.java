@@ -21,6 +21,12 @@ public record NotificationDeliveryInvestigationResponse(
         @JsonProperty("updated_at") Instant updatedAt,
         List<DeliveryAttemptInvestigationResponse> attempts) {
 
+    public NotificationDeliveryInvestigationResponse {
+        if (attempts != null) {
+            attempts = List.copyOf(attempts);
+        }
+    }
+
     public static NotificationDeliveryInvestigationResponse from(NotificationDeliveryInvestigation investigation) {
         return new NotificationDeliveryInvestigationResponse(
                 investigation.eventId(),

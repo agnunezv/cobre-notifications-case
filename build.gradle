@@ -1,9 +1,13 @@
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+import com.github.spotbugs.snom.SpotBugsTask
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     id 'java'
     id 'jacoco'
     id 'com.diffplug.spotless' version '8.9.0'
+    id 'com.github.spotbugs' version '6.5.9'
     id 'org.springframework.boot' version '3.5.16'
 }
 
@@ -39,6 +43,24 @@ spotless {
         target '*.gradle'
         trimTrailingWhitespace()
         endWithNewline()
+    }
+}
+
+spotbugs {
+    ignoreFailures = false
+    effort = Effort.valueOf('MAX')
+    reportLevel = Confidence.valueOf('MEDIUM')
+    excludeFilter = file('config/spotbugs-exclude.xml')
+    runOnCheck = true
+}
+
+tasks.withType(SpotBugsTask).configureEach {
+    reports {
+        html {
+            required = true
+            stylesheet = 'fancy-hist.xsl'
+        }
+        xml.required = false
     }
 }
 
@@ -98,6 +120,14 @@ tasks.register('integrationTest', Test) {
         environment 'DOCKER_HOST', "unix://${colimaSocket.absolutePath}"
         environment 'TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE', '/var/run/docker.sock'
     }
+}
+
+tasks.named('spotbugsTest') {
+    enabled = false
+}
+
+tasks.named('spotbugsIntegrationTest') {
+    enabled = false
 }
 
 tasks.named('jacocoTestReport') {

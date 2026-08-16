@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Spring owns the lifecycle of injected collaborators; retaining their references is intentional. -->
+    <Match>
+        <Or>
+            <Annotation name="org.springframework.stereotype.Component"/>
+            <Annotation name="org.springframework.stereotype.Repository"/>
+            <Annotation name="org.springframework.stereotype.Service"/>
+        </Or>
+        <Field name="~(objectMapper|meterRegistry|jdbcTemplate|restClient|repository)"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- This Spring Security bean intentionally retains the shared, application-configured ObjectMapper. -->
+    <Match>
+        <Class name="com.cobre.notifications.adapter.in.web.security.BearerTokenAuthenticationEntryPoint"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Duplicate tokens must fail fast during startup; @Validated requires this bean to remain proxyable. -->
+    <Match>
+        <Class name="com.cobre.notifications.adapter.in.web.security.BearerTokenRegistry"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+
+    <!-- These records create immutable snapshots with List.copyOf before exposing their values. -->
+    <Match>
+        <Or>
+            <Class name="com.cobre.notifications.adapter.in.bootstrap.NotificationEventsJsonFile"/>
+            <Class name="com.cobre.notifications.adapter.in.web.monitoring.NotificationDeliveryInvestigationResponse"/>
+            <Class name="com.cobre.notifications.adapter.in.web.notification.NotificationEventListResponse"/>
+            <Class name="com.cobre.notifications.application.model.NotificationEventPage"/>
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+</FindBugsFilter>

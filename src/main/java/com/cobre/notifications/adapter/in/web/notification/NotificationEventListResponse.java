@@ -12,6 +12,12 @@ public record NotificationEventListResponse(
         int size,
         @JsonProperty("has_next") boolean hasNext) {
 
+    public NotificationEventListResponse {
+        if (items != null) {
+            items = List.copyOf(items);
+        }
+    }
+
     public static NotificationEventListResponse from(NotificationEventPage page) {
         List<Item> items = page.items().stream()
                 .map(summary -> new Item(

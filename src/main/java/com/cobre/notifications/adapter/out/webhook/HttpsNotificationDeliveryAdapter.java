@@ -39,7 +39,7 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
         long startedAt = System.nanoTime();
 
         try {
-            int httpStatus = restClient
+            Integer httpStatus = restClient
                     .post()
                     .uri(delivery.destination().endpointUrl())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -47,6 +47,14 @@ public class HttpsNotificationDeliveryAdapter implements NotificationDeliveryGat
                     .header(CORRELATION_ID_HEADER, delivery.correlationId())
                     .body(WebhookNotificationRequest.from(delivery))
                     .exchange((request, response) -> response.getStatusCode().value());
+
+            if (httpStatus == null) {
+                return failureOutcome(
+                        DeliveryAttemptResult.PERMANENT_FAILURE,
+                        NotificationDeliveryFailureCategory.HTTP_CLIENT_ERROR,
+                        "The HTTP client returned no response status",
+                        elapsedMillisecondsSince(startedAt));
+            }
 
             return outcomeFrom(httpStatus, elapsedMillisecondsSince(startedAt));
         } catch (ResourceAccessException exception) {
